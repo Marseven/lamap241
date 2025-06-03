@@ -150,9 +150,8 @@ body {
 }
 
 .card-hidden img {
-  width: 32px;
-  height: 32px;
-  filter: brightness(0) invert(1);
+  width: 40px;
+  height: auto;
 }
 
 /* Positions des coins de cartes */
@@ -368,7 +367,7 @@ body {
 }
 
 .header-logo {
-  height: 36px;
+  height: 100px;
   width: auto;
   transition: transform 0.2s ease;
 }
@@ -390,7 +389,7 @@ body {
   align-items: center;
   gap: 6px;
   background: linear-gradient(135deg, #2d5016, #3d6b20);
-  padding: 8px 12px;
+  padding: 4px 12px;
   border-radius: 20px;
   border: 1px solid #4caf50;
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
@@ -401,9 +400,9 @@ body {
 }
 
 .balance-amount {
-  color: #4caf50;
+  font-size: 1.5rem !important;
   font-weight: bold;
-  font-size: 14px;
+  color: #4caf50;
   min-width: 40px;
   text-align: right;
 }
@@ -2436,4 +2435,19 @@ body {
   .pot-calculation {
     font-size: 0.8rem;
   }
+}
+
+.text-red-600{
+  color: red;
+}
+/* Player cards container: horizontal, no wrap, scrollable */
+.player-cards-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 0.5rem;
 }

@@ -39,8 +39,8 @@ export default function WalletPage() {
   };
 
   const methods = [
-    { id: 'airtel', name: 'Airtel Money', icon: '📱', color: 'bg-red-600' },
-    { id: 'moov', name: 'Moov Money', icon: '💳', color: 'bg-blue-600' }
+    { id: 'airtel', name: 'Airtel Money', icon: '', color: 'bg-red-600' },
+    { id: 'moov', name: 'Moov Money', icon: '', color: 'bg-orange-600' }
   ];
 
   const handleDeposit = async (e) => {
@@ -133,21 +133,21 @@ export default function WalletPage() {
       <div className="balance-card">
         <div className="balance-main">
           <div className="balance-label">Solde disponible</div>
-          <div className="balance-amount">{formatAmount(user?.balance || 0)} FCFA</div>
+          <div className="balance-amount text-center">{formatAmount(user?.balance || 0)} FCFA</div>
         </div>
         <div className="balance-actions">
           <button 
             onClick={() => setActiveTab('deposit')}
             className="balance-btn deposit"
           >
-            <span>📈</span>
+            <span></span>
             Recharger
           </button>
           <button 
             onClick={() => setActiveTab('withdraw')}
             className="balance-btn withdraw"
           >
-            <span>📉</span>
+            <span></span>
             Retirer
           </button>
         </div>
@@ -156,10 +156,10 @@ export default function WalletPage() {
       {/* Onglets */}
       <div className="wallet-tabs">
         {[
-          { id: 'overview', label: '📊 Vue d\'ensemble', icon: '📊' },
-          { id: 'deposit', label: '📈 Recharger', icon: '📈' },
-          { id: 'withdraw', label: '📉 Retirer', icon: '📉' },
-          { id: 'history', label: '📜 Historique', icon: '📜' }
+          { id: 'overview', label: 'Vue d\'ensemble', icon: '📊' },
+          { id: 'deposit', label: 'Recharger', icon: '📈' },
+          { id: 'withdraw', label: 'Retirer', icon: '📉' },
+          { id: 'history', label: 'Historique', icon: '📜' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -303,7 +303,7 @@ export default function WalletPage() {
                     </>
                   ) : (
                     <>
-                      <span className="btn-icon">📈</span>
+                      <span className="btn-icon"></span>
                       Recharger {depositForm.amount && `${formatAmount(parseInt(depositForm.amount))} FCFA`}
                     </>
                   )}

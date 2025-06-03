@@ -23,11 +23,13 @@ export const GameRoomProvider = ({ children }) => {
   // Charger les salles depuis localStorage (simulation)
   useEffect(() => {
     const savedRooms = localStorage.getItem('lamap_game_rooms');
+    let validRooms = [];
+
     if (savedRooms) {
       try {
         const parsedRooms = JSON.parse(savedRooms);
         // Filtrer les salles expirées (plus de 1 heure)
-        const validRooms = parsedRooms.filter(room => {
+        validRooms = parsedRooms.filter(room => {
           const roomAge = Date.now() - new Date(room.createdAt).getTime();
           return roomAge < 3600000; // 1 heure
         });

@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import GameBoard from '../components/GameBoard';
 import { useWallet } from '../contexts/WalletContext';
 
-// Dans le composant GameRoom, ajoute :
-const { deductGameBet, addGameWinnings } = useWallet();
-
 // Modifier la fonction endRound pour gérer les gains :
 const endRound = (winner) => {
   setRoundWinner(winner);
@@ -54,6 +51,7 @@ const fullDeck = () => {
 
 
 export default function GameRoom() {
+  const { deductGameBet, addGameWinnings } = useWallet();
   const [playerCards, setPlayerCards] = useState([]);
   const [iaCards, setIaCards] = useState([]);
   const [message, setMessage] = useState('');
@@ -248,19 +246,8 @@ export default function GameRoom() {
   return (
     <div className="mobile-container">
       <div className="game-header">
-        <Link to="/" className="btn btn-primary btn-menu">
-         <i className="fa fa-home"></i> Accueil
-        </Link>
         <button onClick={resetGame} className="btn btn-primary btn-menu">
            <i className="fa fa-refresh"></i> Reset Série
-        </button>
-        <button
-          className="btn btn-primary btn-menu"
-          onClick={() =>
-            window.open(`https://wa.me/?text=J'ai joué à La Map ! Manches: ${score.player}-${score.ia} | Parties: ${games.player}-${games.ia}`, '_blank')
-          }
-        >
-          <i className="fa fa-whatsapp"></i> Share
         </button>
       </div>
 

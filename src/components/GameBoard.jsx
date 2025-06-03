@@ -49,12 +49,16 @@ const GameBoard = ({
         <div className="text-sm font-bold mb-2">
           🤖 Adversaire ({opponentCards.length} cartes)
         </div>
-        <div className="flex justify-center gap-2">
+        
+      </div>
+
+      <div className="flex flex-row justify-center gap-2 flex-wrap">
           {opponentCards.map((_, i) => (
-            <Card key={i} hidden />
+            <div key={i} className="inline-block">
+              <Card hidden />
+            </div>
           ))}
         </div>
-      </div>
 
       {/* Zone de jeu centrale */}
       <div className="card-center">
@@ -79,7 +83,7 @@ const GameBoard = ({
         {/* Indication si zone vide */}
         {!tableCard && !opponentTableCard && (
           <div className="text-gray-500 text-center">
-            <div className="text-4xl mb-2">🎯</div>
+            <div className="text-4xxl mb-2">♠</div>
             <div className="text-sm">Zone de jeu</div>
           </div>
         )}
@@ -126,19 +130,7 @@ const GameBoard = ({
         <div className="text-sm font-bold mb-2">
           👤 Tes cartes ({playerCards.length})
         </div>
-        <div className="flex justify-center gap-2 flex-wrap">
-          {playerCards.map((card, i) => (
-            <Card
-              key={`${card.value}-${card.suit}-${i}`}
-              value={card.value}
-              suit={card.suit}
-              clickable={currentPlayer === 'player' && !disabled}
-              selected={selectedCard === card}
-              playable={isCardPlayable(card)}
-              onClick={() => handleCardClick(card)}
-            />
-          ))}
-        </div>
+       
         
         {/* Aide pour le joueur */}
         {currentPlayer === 'player' && !disabled && (
@@ -150,6 +142,21 @@ const GameBoard = ({
           </div>
         )}
       </div>
+
+       <div className="flex flex-row justify-center gap-2 flex-wrap">
+          {playerCards.map((card, i) => (
+            <div key={`${card.value}-${card.suit}-${i}`} className="inline-block">
+              <Card
+                value={card.value}
+                suit={card.suit}
+                clickable={currentPlayer === 'player' && !disabled}
+                selected={selectedCard === card}
+                playable={isCardPlayable(card)}
+                onClick={() => handleCardClick(card)}
+              />
+            </div>
+          ))}
+        </div>
     </div>
   );
 };

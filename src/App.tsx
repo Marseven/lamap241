@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WalletProvider } from './contexts/WalletContext';
@@ -12,8 +12,9 @@ import CreateRoomPage from './pages/CreateRoomPage';
 import GameRoom from './pages/GameRoom';
 import Rules from './pages/Rules';
 
-// Composant pour protéger les routes
-function ProtectedRoute({ children }) {
+
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   
   if (loading) {

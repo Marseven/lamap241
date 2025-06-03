@@ -1,4 +1,5 @@
 import React from 'react';
+import logo from '../assets/logo.jpg'; 
 
 export default function Card({ 
   value, 
@@ -22,7 +23,7 @@ export default function Card({
         onClick={clickable ? onClick : undefined}
       >
         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-red-600 font-bold text-lg">
-          L
+          <img src={logo} alt="Logo" className="w-full h-full object-contain" />
         </div>
       </div>
     );

@@ -114,7 +114,6 @@ export default function AuthPage() {
         {/* Header avec logo */}
         <div className="auth-header">
           <img src="/logo.png" alt="LaMap241" className="auth-logo" />
-          <h1 className="auth-title">La Map</h1>
           <p className="auth-subtitle">🇬🇦 Jeu de cartes</p>
         </div>
 

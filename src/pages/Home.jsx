@@ -127,7 +127,7 @@ export default function Home() {
 
         {/* Info app */}
         <div className="bg-gray-800 p-4 rounded-lg border border-red-800">
-          <h3 className="font-bold text-yellow-400 mb-2">🎯 La Map</h3>
+          <h3 className="font-bold text-yellow-400 mb-2">♠♥♣♦ La Map</h3>
           <p className="text-sm text-gray-300">
             La première plateforme de jeu Garame du Gabon. 
             Jouez avec vos amis ou contre l'IA, misez de l'argent réel et gagnez !

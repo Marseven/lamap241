@@ -156,26 +156,6 @@ export default function CreateRoomPage() {
             </div>
           </div>
           <div className="form-group">
-        <label className="form-label">
-          <span className="label-icon">📝</span>
-          Nom de la salle
-        </label>
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleInputChange}
-          className={`form-input ${errors.name ? 'error' : ''}`}
-          placeholder="Ex: Bataille épique 🔥"
-          maxLength="30"
-          disabled={loading}
-        />
-        {errors.name && (
-          <div className="error-message">{errors.name}</div>
-        )}
-        <div className="form-help">
-          {formData.name.length}/30 caractères
-        </div>
       </div>
     </div>
 
