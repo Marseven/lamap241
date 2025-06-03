@@ -1,0 +1,203 @@
+/* Container central comme un écran de téléphone (Bootstrap adaptation) */
+
+body{
+  background-color: #000;
+}
+
+.mobile-container {
+  max-width: 414px;
+  margin: 0 auto;
+  background-color: black;
+  color: white;
+  padding: 1rem;
+  padding-bottom: 60px; /* espace pour footer */
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Logo centré + responsive (Bootstrap adaptation) */
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.logo img {
+  width: 160px;
+  height: auto;
+}
+
+/* Palette de couleurs inspirée du logo */
+:root {
+  --lamap-red: #C62828;     /* rouge intense */
+  --lamap-white: #F5F5F5;
+  --lamap-black: #0B0B0B;
+  --lamap-dark: #1A1A1A;
+}
+
+/* Bouton primaire personnalisé Bootstrap */
+.btn-primary {
+  background-color: var(--lamap-red);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 3px;
+  font-weight: bold;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  border: none;
+  margin: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.btn-primary:hover {
+  background-color: #a32222;
+}
+
+.btn-menu{
+  background-color: var(--lamap-red) !important;
+  border: 1px var(--lamap-black) !important;
+  border-radius: 3px !important;
+}
+
+/* Cartes, icônes ou composants stylisés */
+/* Carte stylisée */
+.card {
+  background: var(--lamap-dark);
+  border: 2px solid var(--lamap-red);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 0 10px rgba(198, 40, 40, 0.5);
+  color: white;
+  font-weight: bold;
+}
+
+
+
+/* Carte face avant classique */
+.card-face {
+  background-color: #fff;
+  color: #000;
+  border-radius: 5px;
+  width: 60px;
+  height: 90px;
+  border: 1px solid #000;
+  position: relative;
+  padding: 4px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-face .corner-top,
+.card-face .corner-bottom {
+  position: absolute;
+  font-size: 1rem;
+}
+
+.card-face .corner-top {
+  top: 4px;
+  left: 6px;
+}
+
+.card-face .corner-bottom {
+  bottom: 4px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+.card-face .suit-center {
+  font-size: 2rem;
+}
+
+/* Carte dos caché */
+.card-hidden {
+  background-color: var(--lamap-red);
+  width: 60px;
+  height: 90px;
+  border-radius: 5px;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-hidden img {
+  width: 28px;
+  height: 28px;
+}
+
+
+/* Centrage des cartes jouées */
+.card-center {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+/* Affichage du score */
+.score-box {
+  font-weight: bold;
+  color: var(--lamap-white);
+  margin: 0.5rem 0;
+  text-align: center;
+}
+/* Barre d’en-tête du jeu */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--lamap-dark);
+  width: 100%;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+/* Pied de page du jeu pour le score */
+.game-footer {
+  background-color: var(--lamap-dark);
+  color: var(--lamap-white);
+  text-align: center;
+  padding: 0.5rem;
+  width: 100%;
+  border-top: 3px solid var(--lamap-red);
+  border-radius: 6px 6px 0 0;
+  bottom: 0;
+  left: 0;
+}
+
+/* Ligne d’actions (boutons en bas) */
+.action-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Zone des gains potentiels */
+.game-reward {
+  background-color: #2e2e2e;
+  border: 2px solid gold;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: gold;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
