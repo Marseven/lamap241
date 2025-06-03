@@ -1,6 +1,47 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import GameBoard from '../components/GameBoard';
+import { useWallet } from '../contexts/WalletContext';
+
+// Dans le composant GameRoom, ajoute :
+const { deductGameBet, addGameWinnings } = useWallet();
+
+// Modifier la fonction endRound pour gérer les gains :
+const endRound = (winner) => {
+  setRoundWinner(winner);
+  const newScore = {
+    ...score,
+    [winner]: score[winner] + 1
+  };
+  setScore(newScore);
+  
+  if (newScore[winner] >= 3) {
+    // Partie terminée
+    if (winner === 'player') {
+      // Le joueur gagne - ajouter les gains (simulation)
+      const winnings = 1800; // 90% d'une mise de 2000 FCFA par exemple
+      addGameWinnings(winnings, 'vs-ai');
+    }
+    
+    setMessage(`🎉 ${winner === 'player' ? 'Tu gagnes' : 'IA gagne'} la partie !`);
+    setGamePhase('gameEnd');
+    
+    // Retour à l'accueil après 4 secondes
+    setTimeout(() => {
+      setScore({ player: 0, ia: 0 });
+      window.location.href = '/';
+    }, 4000);
+  } else {
+    // Manche suivante
+    setMessage(`${winner === 'player' ? 'Tu gagnes' : 'IA gagne'} cette manche ! Score: ${newScore.player}-${newScore.ia}`);
+    setGamePhase('roundEnd');
+    
+    setTimeout(() => {
+      startNewRound();
+      setTurn(winner);
+    }, 3000);
+  }
+};
 
 const fullDeck = () => {
   const suits = ['♠', '♥', '♣', '♦'];
@@ -10,6 +51,7 @@ const fullDeck = () => {
   }
   return cards;
 };
+
 
 export default function GameRoom() {
   const [playerCards, setPlayerCards] = useState([]);
