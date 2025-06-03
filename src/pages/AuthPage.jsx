@@ -113,9 +113,9 @@ export default function AuthPage() {
       <div className="auth-container">
         {/* Header avec logo */}
         <div className="auth-header">
-          <img src="/logo-temp.svg" alt="LaMap241" className="auth-logo" />
-          <h1 className="auth-title">LaMap241</h1>
-          <p className="auth-subtitle">🇬🇦 Jeu de cartes Garame</p>
+          <img src="/logo.png" alt="LaMap241" className="auth-logo" />
+          <h1 className="auth-title">La Map</h1>
+          <p className="auth-subtitle">🇬🇦 Jeu de cartes</p>
         </div>
 
         {/* Onglets */}
@@ -124,14 +124,14 @@ export default function AuthPage() {
             onClick={() => switchTab('login')}
             className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`}
           >
-            <span className="tab-icon">🔑</span>
+            <span className="tab-icon"></span>
             Connexion
           </button>
           <button
             onClick={() => switchTab('register')}
             className={`auth-tab ${activeTab === 'register' ? 'active' : ''}`}
           >
-            <span className="tab-icon">📝</span>
+            <span className="tab-icon"></span>
             Inscription
           </button>
         </div>
@@ -269,7 +269,7 @@ export default function AuthPage() {
             ) : (
               <>
                 <span className="btn-icon">
-                  {activeTab === 'login' ? '🚀' : '✨'}
+                  {activeTab === 'login' ? '' : ''}
                 </span>
                 {activeTab === 'login' ? 'Se connecter' : 'S\'inscrire'}
               </>
@@ -284,7 +284,7 @@ export default function AuthPage() {
               <span className="bonus-icon">🎁</span>
               <div className="bonus-text">
                 <div className="bonus-title">Bonus de bienvenue</div>
-                <div className="bonus-amount">10,000 FCFA offerts !</div>
+                <div className="bonus-amount">1000 FCFA offerts !</div>
               </div>
             </div>
           </div>

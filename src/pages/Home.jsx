@@ -11,9 +11,9 @@ export default function Home() {
     <div className="mobile-container fade-in">
       {/* Logo centré */}
       <div className="logo">
-        <img src="/logo-temp.svg" alt="LaMap241" />
+        <img src="/logo.png" alt="LaMap241" />
         <div className="mt-2 text-sm text-gray-400">
-          🇬🇦 Jeu de cartes Garame
+          🇬🇦 Jeu de cartes
         </div>
       </div>
 
@@ -60,10 +60,10 @@ export default function Home() {
         <button
           className="btn-primary"
           onClick={() => {
-            const shareText = "Viens jouer au Garame sur LaMap241 ! 🇬🇦🎴";
+            const shareText = "Viens jouer à la carte sur La Map ! 🇬🇦🎴";
             if (navigator.share) {
               navigator.share({
-                title: 'LaMap241',
+                title: 'La Map',
                 text: shareText,
                 url: window.location.href,
               });
@@ -127,7 +127,7 @@ export default function Home() {
 
         {/* Info app */}
         <div className="bg-gray-800 p-4 rounded-lg border border-red-800">
-          <h3 className="font-bold text-yellow-400 mb-2">🎯 LaMap241</h3>
+          <h3 className="font-bold text-yellow-400 mb-2">🎯 La Map</h3>
           <p className="text-sm text-gray-300">
             La première plateforme de jeu Garame du Gabon. 
             Jouez avec vos amis ou contre l'IA, misez de l'argent réel et gagnez !

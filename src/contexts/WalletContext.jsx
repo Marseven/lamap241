@@ -6,7 +6,10 @@ const WalletContext = createContext();
 export const useWallet = () => {
   const context = useContext(WalletContext);
   if (!context) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('useWallet must be used within a WalletProvider');
+    }
+    return {};
   }
   return context;
 };

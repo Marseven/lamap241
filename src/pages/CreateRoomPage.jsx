@@ -230,7 +230,7 @@ export default function CreateRoomPage() {
               <span>{new Intl.NumberFormat('fr-FR').format(parseInt(formData.bet) * 2)} FCFA</span>
             </div>
             <div className="pot-row">
-              <span>Commission LaMap241 (10%) :</span>
+              <span>Commission La Map (10%) :</span>
               <span>-{new Intl.NumberFormat('fr-FR').format(Math.round(parseInt(formData.bet) * 2 * 0.1))} FCFA</span>
             </div>
             <div className="pot-row total">

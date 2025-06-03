@@ -257,7 +257,7 @@ export default function GameRoom() {
         <button
           className="btn btn-primary btn-menu"
           onClick={() =>
-            window.open(`https://wa.me/?text=J'ai joué à LaMap241 ! Manches: ${score.player}-${score.ia} | Parties: ${games.player}-${games.ia}`, '_blank')
+            window.open(`https://wa.me/?text=J'ai joué à La Map ! Manches: ${score.player}-${score.ia} | Parties: ${games.player}-${games.ia}`, '_blank')
           }
         >
           <i className="fa fa-whatsapp"></i> Share

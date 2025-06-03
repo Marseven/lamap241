@@ -18,7 +18,7 @@ export default function Rules() {
           <li>Le duel se poursuit ainsi jusqu’à épuisement des cartes. Celui qui garde la main à la fin remporte la manche.</li>
           <li>Une partie se joue en 5 manches. Le premier joueur à remporter 3 manches gagne la partie.</li>
           <li><strong>Pari :</strong> un joueur peut créer une partie avec une mise d’argent. L’autre joueur doit accepter la même mise pour rejoindre.</li>
-          <li>La somme est déduite du solde de chaque joueur. Le vainqueur empoche <strong>90%</strong> de la cagnotte, et <strong>10%</strong> vont à la plateforme LaMap241.</li>
+          <li>La somme est déduite du solde de chaque joueur. Le vainqueur empoche <strong>90%</strong> de la cagnotte, et <strong>10%</strong> vont à la plateforme La Map.</li>
           <li>Il est <strong>interdit d’abandonner une partie</strong> contre un autre joueur. Contre l’IA, c’est autorisé.</li>
         </ul>
       </div>

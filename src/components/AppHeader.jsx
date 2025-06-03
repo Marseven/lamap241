@@ -22,7 +22,7 @@ export default function AppHeader({
       <div className="header-content">
         {/* Logo côté gauche */}
         <Link to="/" className="logo-section">
-          <img src="/logo-temp.svg" alt="LaMap241" className="header-logo" />
+          <img src="/logo.png" alt="LaMap241" className="header-logo" />
         </Link>
 
         {/* Infos utilisateur côté droit */}
