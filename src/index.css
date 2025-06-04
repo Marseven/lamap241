@@ -150,7 +150,7 @@ body {
 }
 
 .card-hidden img {
-  width: 40px;
+  width: 0px;
   height: auto;
 }
 
@@ -399,14 +399,6 @@ body {
   font-size: 16px;
 }
 
-.balance-amount {
-  font-size: 1.5rem !important;
-  font-weight: bold;
-  color: #4caf50;
-  min-width: 40px;
-  text-align: right;
-}
-
 /* Bouton notifications */
 .notification-btn {
   position: relative;
@@ -453,7 +445,7 @@ body {
 .user-avatar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
@@ -485,7 +477,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .user-name {
@@ -986,7 +978,7 @@ body {
 }
 
 .balance-amount {
-  font-size: 2.5rem;
+  font-size: 1rem;
   font-weight: bold;
   color: #4caf50;
   text-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
@@ -1556,7 +1548,7 @@ body {
   }
   
   .balance-amount {
-    font-size: 2rem;
+    font-size: 1rem;
   }
   
   .wallet-tabs {
@@ -2440,14 +2432,279 @@ body {
 .text-red-600{
   color: red;
 }
-/* Player cards container: horizontal, no wrap, scrollable */
-.player-cards-container {
+
+
+.cards-row {
   display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   overflow-x: auto;
-  white-space: nowrap;
-  padding: 0.5rem;
+  padding: 0.5rem 0;
+  max-width: 100%;
+  scroll-behavior: smooth;
+}
+
+.cards-row > * {
+  flex: 0 0 auto;
+}
+
+.cards-row::-webkit-scrollbar {
+  display: none; /* pour un style plus mobile-friendly */
+}
+
+.card-hidden img {
+    width: 80px;
+    height: auto;
+}
+
+.reward-below-cards {
+  margin-top: 50px !important;
+}
+
+.footer-below-cards {
+  margin-top: 12px; /* facultatif si tu veux un petit espace entre gain et footer */
+}
+
+.game-board-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+
+a {
+    color: rgba(var(--lamap-red), var(--bs-link-opacity, 1)) !important;
+    text-decoration: none !important;
+}
+
+.neon-theme {
+  background-color: #000;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 1rem;
+  min-height: 100vh;
+}
+
+.lamap-logo {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.lamap-logo img {
+  width: 160px;
+  filter: drop-shadow(0 0 10px red);
+}
+
+.subtitle {
+  color: red;
+  margin-top: 0.25rem;
+  font-weight: bold;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.action-card {
+  background-color: #111;
+  border: 2px solid red;
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 15px red;
+}
+
+.action-card span {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.notif-badge {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: red;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: bold;
+}
+
+.lamap-section {
+  background-color: #111;
+  border: 2px solid red;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+}
+
+.lamap-section h3 {
+  color: red;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.stats-row div {
+  flex: 1;
+}
+
+.stats-row strong {
+  display: block;
+  font-size: 1.2rem;
+  color: #ff5555;
+}
+
+.stats-row span {
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+.avatar-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: start;
+  overflow-x: auto;
+}
+
+.avatar-item {
+  text-align: center;
+}
+
+.avatar-img {
+  width: 40px;
+  height: 40px;
+  background-color: #ccc;
+  border-radius: 50%;
+  margin-bottom: 0.5rem;
+}
+
+.avatar-name {
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+.card-playable {
+  border: 1px solid limegreen !important;
+  box-shadow: 0 0 4px limegreen;
+}
+
+.card-center {
+  position: relative;
+  width: 100%;
+  height: 140px;
+  margin: 2rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url('/bg-tatami.png') center/cover no-repeat;
+  border-radius: 12px;
+  box-shadow: inset 0 0 16px rgba(0,0,0,0.4);
+}
+
+.card-center .absolute {
+  transition: transform 0.4s ease;
+}
+
+.cards-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin: 10px auto;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.top-16 {
+  top: 64px;
+}
+.-top-16 {
+  top: -64px;
+}
+
+.z-0 {
+  z-index: 0;
+}
+.z-10 {
+  z-index: 10;
+}
+
+.my-20 {
+  margin-top: 5rem;
+  margin-bottom: 5rem;
+}
+
+.text-white {
+  color: #fff;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.font-bold {
+  font-weight: bold;
+}
+.text-center {
+  text-align: center;
+}
+.text-lg {
+  font-size: 1.125rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.d-flex {
+  display: flex;
+}
+.flex-column {
+  flex-direction: column;
+}
+.items-center {
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .card-center {
+    height: 100px;
+  }
+  .top-16, .-top-16 {
+    top: 48px;
+  }
 }

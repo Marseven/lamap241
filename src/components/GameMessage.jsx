@@ -23,7 +23,7 @@ export default function GameMessage({ message, type = 'normal', currentPlayer })
 
   return (
     <div className={`${getMessageClass()} fade-in`}>
-      <div className="font-semibold mb-2">{message}</div>
+      <div className="font-semibold">{message}</div>
       {currentPlayer && (
         <div className="text-sm opacity-80">
           {getTurnIndicator()}

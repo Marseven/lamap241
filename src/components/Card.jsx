@@ -23,7 +23,7 @@ export default function Card({
         onClick={clickable ? onClick : undefined}
       >
         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-red-600 font-bold text-lg">
-          <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+          <img src={logo} alt="Logo" className="w-full h-full" />
         </div>
       </div>
     );
