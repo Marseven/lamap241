@@ -176,6 +176,44 @@ class ApiService {
 
     return ws;
   }
+
+  async initiateDeposit(data) {
+    const response = await this.request("/wallet/deposit", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    // Si succès, rediriger vers E-Billing
+    if (response.success && response.invoice_number) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = import.meta.env.VITE_EBILLING_POST_URL;
+
+      const invoiceInput = document.createElement("input");
+      invoiceInput.type = "hidden";
+      invoiceInput.name = "invoice_number";
+      invoiceInput.value = response.invoice_number;
+
+      const callbackInput = document.createElement("input");
+      callbackInput.type = "hidden";
+      callbackInput.name = "eb_callbackurl";
+      callbackInput.value = `${window.location.origin}/wallet/callback`;
+
+      form.appendChild(invoiceInput);
+      form.appendChild(callbackInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    return response;
+  }
+
+  async initiateWithdrawal(data) {
+    return this.request("/wallet/withdraw", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export default new ApiService();

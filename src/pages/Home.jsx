@@ -30,7 +30,7 @@ export default function Home() {
         </Link>
         <Link to="/game/vs-ai" className="action-card">
           <span>🤖</span>
-          <p>Jouer<br />contre l’IA</p>
+          <p>Jouer<br/>contre l’IA</p>
         </Link>
         <Link to="/wallet" className="action-card">
           <span>💰</span>
