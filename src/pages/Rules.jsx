@@ -47,7 +47,7 @@ export default function Rules() {
         <Link to="/" className="back-btn">
           ← Accueil
         </Link>
-        <h1 className="page-title">📋 Règles du Garame</h1>
+        <h1 className="page-title">Règles du Garame</h1>
         <Link to="/game/vs-ai" className="play-btn">
           🎮 Jouer
         </Link>

@@ -143,7 +143,6 @@ export default function AppHeader({
                   <div className="user-info">
                     <div className="user-name">{user.pseudo}</div>
                     <div className="user-level">
-                      <span className="level-icon">⭐</span>
                       <span>Niveau {user.level || 1}</span>
                     </div>
                   </div>
