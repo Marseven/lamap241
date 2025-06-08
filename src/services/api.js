@@ -33,15 +33,15 @@ class ApiService {
         },
       });
 
-      // Gérer les erreurs HTTP
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
         throw new Error(
-          error.message || `HTTP error! status: ${response.status}`
+          data.message || `HTTP error! status: ${response.status}`
         );
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       console.error("API Error:", error);
       throw error;
@@ -52,7 +52,10 @@ class ApiService {
   async login(credentials) {
     const response = await this.request("/auth/login", {
       method: "POST",
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({
+        login: credentials.pseudo, // Le backend accepte email ou pseudo
+        password: credentials.password,
+      }),
     });
 
     if (response.token) {
@@ -60,13 +63,20 @@ class ApiService {
       localStorage.setItem("lamap_token", response.token);
     }
 
-    return response;
+    return { success: true, user: response.user };
   }
 
   async register(userData) {
     const response = await this.request("/auth/register", {
       method: "POST",
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        name: userData.pseudo, // Utiliser le pseudo comme nom
+        pseudo: userData.pseudo,
+        email: userData.email || `${userData.pseudo}@lamap241.com`, // Email par défaut
+        phone: userData.phone,
+        password: userData.password,
+        password_confirmation: userData.confirmPassword,
+      }),
     });
 
     if (response.token) {
@@ -74,7 +84,7 @@ class ApiService {
       localStorage.setItem("lamap_token", response.token);
     }
 
-    return response;
+    return { success: true, user: response.user };
   }
 
   async logout() {
@@ -87,7 +97,8 @@ class ApiService {
   }
 
   async getProfile() {
-    return this.request("/auth/profile");
+    const response = await this.request("/auth/profile");
+    return response.user;
   }
 
   // Wallet endpoints
@@ -98,14 +109,22 @@ class ApiService {
   async deposit(data) {
     return this.request("/wallet/deposit", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        amount: data.amount,
+        payment_method: data.method,
+        phone_number: data.phoneNumber,
+      }),
     });
   }
 
   async withdraw(data) {
     return this.request("/wallet/withdraw", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        amount: data.amount,
+        payment_method: data.method,
+        phone_number: data.phoneNumber,
+      }),
     });
   }
 
@@ -123,35 +142,43 @@ class ApiService {
   async createRoom(roomData) {
     return this.request("/rooms", {
       method: "POST",
-      body: JSON.stringify(roomData),
+      body: JSON.stringify({
+        name: roomData.name,
+        bet_amount: roomData.bet,
+        max_players: 2,
+        rounds_to_win: roomData.roundsToWin || 3,
+        time_limit: roomData.timeLimit || 300,
+        allow_spectators: roomData.allowSpectators || false,
+      }),
     });
   }
 
-  async joinRoom(roomId) {
-    return this.request(`/rooms/${roomId}/join`, {
+  async joinRoom(roomCode) {
+    return this.request(`/rooms/${roomCode}/join`, {
       method: "POST",
     });
   }
 
-  async leaveRoom(roomId) {
-    return this.request(`/rooms/${roomId}/leave`, {
+  async leaveRoom(roomCode) {
+    return this.request(`/rooms/${roomCode}/leave`, {
       method: "POST",
     });
   }
 
-  async getRoom(roomId) {
-    return this.request(`/rooms/${roomId}`);
+  async getRoom(roomCode) {
+    return this.request(`/rooms/${roomCode}`);
   }
 
   // Game endpoints
   async getGameState(gameId) {
-    return this.request(`/games/${gameId}`);
+    const response = await this.request(`/games/${gameId}/state`);
+    return response.state;
   }
 
   async playCard(gameId, cardData) {
-    return this.request(`/games/${gameId}/play`, {
+    return this.request(`/games/${gameId}/play-card`, {
       method: "POST",
-      body: JSON.stringify(cardData),
+      body: JSON.stringify({ card: cardData }),
     });
   }
 
@@ -161,58 +188,15 @@ class ApiService {
     });
   }
 
-  // WebSocket pour le temps réel
-  connectWebSocket(gameId) {
-    const wsUrl = API_BASE_URL.replace("http", "ws").replace("/api", "");
-    const ws = new WebSocket(`${wsUrl}/game/${gameId}?token=${this.token}`);
-
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    return ws;
+  // Stats endpoints
+  async getMyStats() {
+    const response = await this.request("/stats/my-stats");
+    return response.stats;
   }
 
-  async initiateDeposit(data) {
-    const response = await this.request("/wallet/deposit", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-
-    // Si succès, rediriger vers E-Billing
-    if (response.success && response.invoice_number) {
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = import.meta.env.VITE_EBILLING_POST_URL;
-
-      const invoiceInput = document.createElement("input");
-      invoiceInput.type = "hidden";
-      invoiceInput.name = "invoice_number";
-      invoiceInput.value = response.invoice_number;
-
-      const callbackInput = document.createElement("input");
-      callbackInput.type = "hidden";
-      callbackInput.name = "eb_callbackurl";
-      callbackInput.value = `${window.location.origin}/wallet/callback`;
-
-      form.appendChild(invoiceInput);
-      form.appendChild(callbackInput);
-      document.body.appendChild(form);
-      form.submit();
-    }
-
-    return response;
-  }
-
-  async initiateWithdrawal(data) {
-    return this.request("/wallet/withdraw", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  async getLeaderboard(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return this.request(`/stats/leaderboard?${query}`);
   }
 }
 

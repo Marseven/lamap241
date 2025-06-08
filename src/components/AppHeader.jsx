@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+// src/components/AppHeader.jsx - Version avec dropdown amélioré
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 export default function AppHeader({ 
   user = null, 
   onLogout = () => {}, 
-  showBalance = true 
+  showBalance = true,
+  showNotifications = true 
 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const formatBalance = (balance) => {
     if (balance >= 1000000) {
@@ -14,7 +22,70 @@ export default function AppHeader({
     } else if (balance >= 1000) {
       return (balance / 1000).toFixed(1) + 'K';
     }
-    return balance.toString();
+    return new Intl.NumberFormat('fr-FR').format(balance);
+  };
+
+  const handleLogout = () => {
+    setShowUserMenu(false);
+    onLogout();
+  };
+
+  const toggleUserMenu = () => {
+    if (showUserMenu) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setShowUserMenu(false);
+        setIsAnimating(false);
+      }, 200);
+    } else {
+      setShowUserMenu(true);
+    }
+  };
+
+  const handleMenuItemClick = (path) => {
+    setShowUserMenu(false);
+    if (path) {
+      navigate(path);
+    }
+  };
+
+  // Fermer le menu si on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showUserMenu &&
+        dropdownRef.current &&
+        buttonRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
+
+  // Fermer le menu lors du changement de route
+  useEffect(() => {
+    setShowUserMenu(false);
+  }, [location.pathname]);
+
+  const getStatusColor = () => {
+    // Vous pouvez gérer différents statuts ici
+    return 'online'; // online, away, busy, offline
+  };
+
+  const getAvatarGradient = (pseudo) => {
+    const firstChar = pseudo?.charAt(0).toUpperCase() || 'U';
+    const charCode = firstChar.charCodeAt(0);
+    const hue = (charCode * 137.508) % 360; // Génère une couleur unique basée sur la première lettre
+    return {
+      background: `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 60) % 360}, 70%, 40%))`
+    };
   };
 
   return (
@@ -22,8 +93,29 @@ export default function AppHeader({
       <div className="header-content">
         {/* Logo côté gauche */}
         <Link to="/" className="logo-section">
-          <img src="/logo.png" alt="LaMap241" className="header-logo" />
+          <div className="logo-container">
+            <img src="/logo.png" alt="LaMap241" className="header-logo" />
+            <span className="logo-text">LaMap241</span>
+          </div>
         </Link>
+
+        {/* Navigation principale (optionnelle) */}
+        <nav className="main-nav">
+          <Link 
+            to="/rooms" 
+            className={`nav-link ${location.pathname === '/rooms' ? 'active' : ''}`}
+          >
+            <span className="nav-icon">🎮</span>
+            <span className="nav-text">Jouer</span>
+          </Link>
+          <Link 
+            to="/wallet" 
+            className={`nav-link ${location.pathname === '/wallet' ? 'active' : ''}`}
+          >
+            <span className="nav-icon">💰</span>
+            <span className="nav-text">Portefeuille</span>
+          </Link>
+        </nav>
 
         {/* Infos utilisateur côté droit */}
         {user ? (
@@ -31,59 +123,185 @@ export default function AppHeader({
             {/* Solde */}
             {showBalance && (
               <div className="balance-display">
-                <span className="balance-icon">🪙</span>
-                <span className="balance-amount">{formatBalance(user.balance)}</span>
+                <div className="balance-container">
+                  <span className="balance-icon">🪙</span>
+                  <div className="balance-info">
+                    <span className="balance-amount">{formatBalance(user.balance)}</span>
+                    <span className="balance-currency">FCFA</span>
+                  </div>
+                </div>
+                <Link to="/wallet" className="balance-add-btn" title="Recharger">
+                  <span>+</span>
+                </Link>
               </div>
             )}
 
             {/* Notifications */}
-            <button className="notification-btn">
-              <span className="notification-icon">🔔</span>
-              <span className="notification-badge">3</span>
-            </button>
+            {showNotifications && <NotificationBell />}
 
-            {/* Avatar utilisateur */}
+            {/* Avatar utilisateur avec dropdown amélioré */}
             <div className="user-avatar-section">
               <button 
-                className="user-avatar"
-                onClick={() => setShowUserMenu(!showUserMenu)}
+                ref={buttonRef}
+                className={`user-avatar-btn ${showUserMenu ? 'active' : ''}`}
+                onClick={toggleUserMenu}
+                aria-expanded={showUserMenu}
+                aria-haspopup="true"
               >
-                <div className="avatar-circle">
-                  <span className="avatar-text">
-                    {user.pseudo ? user.pseudo.charAt(0).toUpperCase() : 'U'}
-                  </span>
+                <div className="avatar-wrapper">
+                  <div 
+                    className="avatar-circle"
+                    style={getAvatarGradient(user.pseudo)}
+                  >
+                    <span className="avatar-text">
+                      {user.pseudo ? user.pseudo.charAt(0).toUpperCase() : 'U'}
+                    </span>
+                    <div className={`status-indicator ${getStatusColor()}`}></div>
+                  </div>
+                  <div className="user-info">
+                    <div className="user-name">{user.pseudo}</div>
+                    <div className="user-level">
+                      <span className="level-icon">⭐</span>
+                      <span>Niveau {user.level || 1}</span>
+                    </div>
+                  </div>
+                  <div className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`}>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
-                <div className="user-info">
-                  <div className="user-name">{user.pseudo}</div>
-                  <div className="user-status">En ligne</div>
-                </div>
-                <span className="dropdown-arrow">⌄</span>
               </button>
 
-              {/* Menu déroulant */}
+              {/* Menu déroulant amélioré */}
               {showUserMenu && (
-                <div className="user-dropdown">
-                  <Link to="/profile" className="dropdown-item">
-                    <span className="dropdown-icon">👤</span>
-                    Profil
-                  </Link>
-                  <Link to="/wallet" className="dropdown-item">
-                    <span className="dropdown-icon">💰</span>
-                    Portefeuille
-                  </Link>
-                  <Link to="/history" className="dropdown-item">
-                    <span className="dropdown-icon">📊</span>
-                    Historique
-                  </Link>
+                <div 
+                  ref={dropdownRef}
+                  className={`user-dropdown ${isAnimating ? 'closing' : ''}`}
+                >
+                  {/* Header du dropdown */}
+                  <div className="dropdown-header">
+                    <div 
+                      className="dropdown-avatar"
+                      style={getAvatarGradient(user.pseudo)}
+                    >
+                      <span>{user.pseudo ? user.pseudo.charAt(0).toUpperCase() : 'U'}</span>
+                    </div>
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-name">{user.pseudo}</div>
+                      <div className="dropdown-balance">
+                        {formatBalance(user.balance)} FCFA
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu items principaux */}
+                  <div className="dropdown-section">
+                    <button 
+                      onClick={() => handleMenuItemClick('/profile')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">👤</span>
+                      <div className="item-content">
+                        <span className="item-label">Mon Profil</span>
+                        <span className="item-desc">Informations personnelles</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/wallet')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">💰</span>
+                      <div className="item-content">
+                        <span className="item-label">Portefeuille</span>
+                        <span className="item-desc">Gérer vos finances</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/history')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">📊</span>
+                      <div className="item-content">
+                        <span className="item-label">Historique</span>
+                        <span className="item-desc">Vos parties et transactions</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/achievements')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">🏆</span>
+                      <div className="item-content">
+                        <span className="item-label">Succès</span>
+                        <span className="item-desc">Vos réalisations</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+                  </div>
+
                   <div className="dropdown-divider"></div>
-                  <Link to="/settings" className="dropdown-item">
-                    <span className="dropdown-icon">⚙️</span>
-                    Paramètres
-                  </Link>
-                  <button onClick={onLogout} className="dropdown-item logout">
-                    <span className="dropdown-icon">🚪</span>
-                    Déconnexion
-                  </button>
+
+                  {/* Menu items secondaires */}
+                  <div className="dropdown-section">
+                    <button 
+                      onClick={() => handleMenuItemClick('/rules')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">📋</span>
+                      <div className="item-content">
+                        <span className="item-label">Règles du jeu</span>
+                        <span className="item-desc">Comment jouer</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/support')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">❓</span>
+                      <div className="item-content">
+                        <span className="item-label">Aide & Support</span>
+                        <span className="item-desc">Besoin d'aide ?</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/settings')}
+                      className="dropdown-item"
+                    >
+                      <span className="dropdown-icon">⚙️</span>
+                      <div className="item-content">
+                        <span className="item-label">Paramètres</span>
+                        <span className="item-desc">Préférences du compte</span>
+                      </div>
+                      <span className="item-arrow">→</span>
+                    </button>
+                  </div>
+
+                  <div className="dropdown-divider"></div>
+
+                  {/* Déconnexion */}
+                  <div className="dropdown-section">
+                    <button 
+                      onClick={handleLogout}
+                      className="dropdown-item logout-item"
+                    >
+                      <span className="dropdown-icon">🚪</span>
+                      <div className="item-content">
+                        <span className="item-label">Déconnexion</span>
+                        <span className="item-desc">Quitter votre session</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -91,10 +309,12 @@ export default function AppHeader({
         ) : (
           /* État non connecté */
           <div className="auth-section">
-            <Link to="/login" className="auth-btn login-btn">
+            <Link to="/auth" className="auth-btn login-btn">
+              <span className="btn-icon">👤</span>
               Connexion
             </Link>
-            <Link to="/register" className="auth-btn register-btn">
+            <Link to="/auth" className="auth-btn register-btn">
+              <span className="btn-icon">✨</span>
               S'inscrire
             </Link>
           </div>

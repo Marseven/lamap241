@@ -1,9 +1,9 @@
+// src/pages/GameRoomsPage.jsx - Version mise à jour avec notifications
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGameRoom } from '../contexts/GameRoomContext';
-import { useNotifications } from '../hooks/useNotifications';
-import NotificationToast from '../components/NotificationToast';
+import { useGameNotifications } from '../hooks/useGameNotifications';
 
 export default function GameRoomsPage() {
   const { user } = useAuth();
@@ -14,7 +14,15 @@ export default function GameRoomsPage() {
     joinRoom, 
     loading 
   } = useGameRoom();
-  const { notifications, addNotification, removeNotification } = useNotifications();
+  
+  const { 
+    notifyPlayerJoined, 
+    notifyGameStart,
+    notifyRoomFull,
+    notifyInsufficientFunds,
+    notifyGameError
+  } = useGameNotifications();
+  
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,20 +48,41 @@ export default function GameRoomsPage() {
     }
   }, [searchQuery, activeTab, getAvailableRooms, getUserRooms, searchRooms]);
 
-  const handleJoinRoom = async (roomId) => {
-    setJoinLoading(roomId);
+  const handleJoinRoom = async (room) => {
+    setJoinLoading(room.id);
     
     try {
-      const result = await joinRoom(roomId);
+      // Vérifications avant de rejoindre
+      if (room.players.length >= room.maxPlayers) {
+        notifyRoomFull();
+        return;
+      }
+
+      if (room.bet > (user?.balance || 0)) {
+        notifyInsufficientFunds(room.bet, user?.balance || 0);
+        return;
+      }
+
+      if (room.players.includes(user?.pseudo)) {
+        notifyGameError('Vous êtes déjà dans cette salle');
+        return;
+      }
+
+      const result = await joinRoom(room.id);
       
       if (result.success) {
-        addNotification('success', 'Salle rejointe avec succès !');
-        navigate(`/game/${roomId}`);
+        notifyPlayerJoined(user.pseudo, result.room.name);
+        
+        if (result.room.status === 'playing') {
+          notifyGameStart(result.room.name);
+        }
+        
+        navigate(`/game/${room.id}`);
       } else {
-        addNotification('error', result.error);
+        notifyGameError(result.error);
       }
     } catch (error) {
-      addNotification('error', 'Erreur lors de la connexion');
+      notifyGameError('Erreur lors de la connexion à la salle');
     } finally {
       setJoinLoading(null);
     }
@@ -105,10 +134,15 @@ export default function GameRoomsPage() {
     }
   };
 
+  const canJoinRoom = (room) => {
+    return room.status === 'waiting' && 
+           !room.players.includes(user?.pseudo) &&
+           room.players.length < room.maxPlayers &&
+           room.bet <= (user?.balance || 0);
+  };
+
   return (
     <div className="game-rooms-page">
-      <NotificationToast notifications={notifications} onRemove={removeNotification} />
-      
       {/* Header */}
       <div className="rooms-header">
         <Link to="/" className="back-btn">
@@ -251,10 +285,10 @@ export default function GameRoomsPage() {
               </div>
 
               <div className="room-actions">
-                {room.status === 'waiting' && !room.players.includes(user?.pseudo) && (
+                {canJoinRoom(room) && (
                   <button
-                    onClick={() => handleJoinRoom(room.id)}
-                    disabled={joinLoading === room.id || room.bet > (user?.balance || 0)}
+                    onClick={() => handleJoinRoom(room)}
+                    disabled={joinLoading === room.id}
                     className="join-btn"
                   >
                     {joinLoading === room.id ? (
@@ -262,17 +296,33 @@ export default function GameRoomsPage() {
                         <span className="loading-spinner small"></span>
                         Connexion...
                       </>
-                    ) : room.bet > (user?.balance || 0) ? (
-                      <>
-                        <span className="btn-icon">💸</span>
-                        Solde insuffisant
-                      </>
                     ) : (
                       <>
                         <span className="btn-icon">🎮</span>
                         Rejoindre
                       </>
                     )}
+                  </button>
+                )}
+
+                {room.status === 'waiting' && !canJoinRoom(room) && !room.players.includes(user?.pseudo) && (
+                  <button
+                    disabled
+                    className="join-btn"
+                    title={
+                      room.bet > (user?.balance || 0) 
+                        ? 'Solde insuffisant' 
+                        : room.players.length >= room.maxPlayers 
+                        ? 'Salle complète' 
+                        : 'Non disponible'
+                    }
+                  >
+                    <span className="btn-icon">💸</span>
+                    {room.bet > (user?.balance || 0) 
+                      ? 'Solde insuffisant' 
+                      : room.players.length >= room.maxPlayers 
+                      ? 'Salle complète' 
+                      : 'Non disponible'}
                   </button>
                 )}
 

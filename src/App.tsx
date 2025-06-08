@@ -1,9 +1,12 @@
+// src/App.tsx - Version finale avec système de notifications complet
 import type { ReactNode } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WalletProvider } from './contexts/WalletContext';
 import { GameRoomProvider } from './contexts/GameRoomContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import AppHeader from './components/AppHeader';
+import NotificationManager from './components/NotificationManager';
 import AuthPage from './pages/AuthPage';
 import Home from './pages/Home';
 import WalletPage from './pages/WalletPage';
@@ -11,8 +14,6 @@ import GameRoomsPage from './pages/GameRoomsPage';
 import CreateRoomPage from './pages/CreateRoomPage';
 import GameRoom from './pages/GameRoom';
 import Rules from './pages/Rules';
-
-
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -46,6 +47,9 @@ function AppContent() {
     <Router>
       <div className="min-h-screen bg-black text-white">
         {user && <AppHeader user={user} onLogout={logout} />}
+        
+        {/* Gestionnaire de notifications global */}
+        <NotificationManager />
         
         <Routes>
           <Route 
@@ -96,15 +100,17 @@ function AppContent() {
   );
 }
 
-// Composant App avec tous les providers
+// Composant App avec tous les providers dans le bon ordre
 export default function App() {
   return (
     <AuthProvider>
-      <WalletProvider>
-        <GameRoomProvider>
-          <AppContent />
-        </GameRoomProvider>
-      </WalletProvider>
+      <NotificationProvider>
+        <WalletProvider>
+          <GameRoomProvider>
+            <AppContent />
+          </GameRoomProvider>
+        </WalletProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

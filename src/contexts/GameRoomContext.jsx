@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useWallet } from './WalletContext';
+import api from '../services/api';
 
 const GameRoomContext = createContext();
 
@@ -13,81 +14,36 @@ export const useGameRoom = () => {
 };
 
 export const GameRoomProvider = ({ children }) => {
-  const { user } = useAuth();
-  const { deductGameBet, addGameWinnings } = useWallet();
+  const { user, refreshUser } = useAuth();
+  const { refreshWallet } = useWallet();
   
   const [rooms, setRooms] = useState([]);
   const [currentRoom, setCurrentRoom] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Charger les salles depuis localStorage (simulation)
+  // Charger les salles depuis l'API
   useEffect(() => {
-    const savedRooms = localStorage.getItem('lamap_game_rooms');
-    let validRooms = [];
-
-    if (savedRooms) {
-      try {
-        const parsedRooms = JSON.parse(savedRooms);
-        // Filtrer les salles expirées (plus de 1 heure)
-        validRooms = parsedRooms.filter(room => {
-          const roomAge = Date.now() - new Date(room.createdAt).getTime();
-          return roomAge < 3600000; // 1 heure
-        });
-        setRooms(validRooms);
-      } catch (error) {
-        console.error('Erreur lors du chargement des salles:', error);
-      }
+    if (user) {
+      loadRooms();
+    } else {
+      setRooms([]);
+      setCurrentRoom(null);
     }
+  }, [user]);
 
-    // Ajouter quelques salles démo
-    const demoRooms = [
-      {
-        id: 'demo1',
-        name: 'Partie rapide 500F',
-        creator: 'Alpha_241',
-        bet: 500,
-        status: 'waiting',
-        players: ['Alpha_241'],
-        maxPlayers: 2,
-        createdAt: new Date().toISOString(),
-        isDemo: true
-      },
-      {
-        id: 'demo2', 
-        name: 'Challenge 2000F',
-        creator: 'Beta_GBN',
-        bet: 2000,
-        status: 'waiting',
-        players: ['Beta_GBN'],
-        maxPlayers: 2,
-        createdAt: new Date().toISOString(),
-        isDemo: true
-      },
-      {
-        id: 'demo3',
-        name: 'Tournoi 5000F',
-        creator: 'Gamma_LOL',
-        bet: 5000,
-        status: 'waiting', 
-        players: ['Gamma_LOL'],
-        maxPlayers: 2,
-        createdAt: new Date().toISOString(),
-        isDemo: true
-      }
-    ];
-
-    if (validRooms.length === 0) {
-      setRooms(demoRooms);
+  // Charger les salles disponibles
+  const loadRooms = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getRooms();
+      setRooms(response.rooms || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des salles:', error);
+      setRooms([]);
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  // Sauvegarder les salles dans localStorage
-  useEffect(() => {
-    if (rooms.length > 0) {
-      const realRooms = rooms.filter(room => !room.isDemo);
-      localStorage.setItem('lamap_game_rooms', JSON.stringify(realRooms));
-    }
-  }, [rooms]);
+  };
 
   // Créer une nouvelle salle
   const createRoom = async (roomData) => {
@@ -96,47 +52,31 @@ export const GameRoomProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      // Validation
+      // Validation côté client
       if (roomData.bet < 500) throw new Error('Mise minimum : 500 FCFA');
       if (roomData.bet > user.balance) throw new Error('Solde insuffisant');
       if (!roomData.name || roomData.name.trim().length < 3) {
         throw new Error('Nom de partie trop court (minimum 3 caractères)');
       }
 
-      // Déduire la mise immédiatement
-      const betResult = deductGameBet(roomData.bet, 'multiplayer');
-      if (!betResult) throw new Error('Impossible de déduire la mise');
+      const response = await api.createRoom(roomData);
+      
+      if (response.room) {
+        const newRoom = response.room;
+        
+        // Ajouter la salle à la liste locale
+        setRooms(prev => [newRoom, ...prev]);
+        setCurrentRoom(newRoom);
 
-      // Créer la salle
-      const newRoom = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: roomData.name.trim(),
-        creator: user.pseudo,
-        creatorId: user.id,
-        bet: roomData.bet,
-        status: 'waiting',
-        players: [user.pseudo],
-        playerIds: [user.id],
-        maxPlayers: 2,
-        createdAt: new Date().toISOString(),
-        gameSettings: {
-          roundsToWin: 3,
-          timeLimit: roomData.timeLimit || 300, // 5 minutes par défaut
-          allowSpectators: roomData.allowSpectators || false
-        },
-        pot: roomData.bet,
-        commission: Math.round(roomData.bet * 2 * 0.1), // 10% de commission
-        isDemo: false
-      };
+        // Rafraîchir le solde utilisateur
+        await refreshUser();
 
-      setRooms(prev => [newRoom, ...prev]);
-      setCurrentRoom(newRoom);
-
-      // Simuler la latence réseau
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      return { success: true, room: newRoom };
+        return { success: true, room: newRoom };
+      } else {
+        return { success: false, error: response.message || 'Erreur inconnue' };
+      }
     } catch (error) {
+      console.error('Erreur création salle:', error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -144,41 +84,32 @@ export const GameRoomProvider = ({ children }) => {
   };
 
   // Rejoindre une salle
-  const joinRoom = async (roomId) => {
+  const joinRoom = async (roomCode) => {
     if (!user) throw new Error('Utilisateur non connecté');
     
     setLoading(true);
     
     try {
-      const room = rooms.find(r => r.id === roomId);
-      if (!room) throw new Error('Salle introuvable');
-      if (room.status !== 'waiting') throw new Error('Salle non disponible');
-      if (room.players.includes(user.pseudo)) throw new Error('Vous êtes déjà dans cette salle');
-      if (room.players.length >= room.maxPlayers) throw new Error('Salle complète');
-      if (room.bet > user.balance) throw new Error('Solde insuffisant');
+      const response = await api.joinRoom(roomCode);
+      
+      if (response.room) {
+        const updatedRoom = response.room;
+        
+        // Mettre à jour la salle dans la liste locale
+        setRooms(prev => prev.map(r => 
+          r.code === roomCode ? updatedRoom : r
+        ));
+        setCurrentRoom(updatedRoom);
 
-      // Déduire la mise
-      const betResult = deductGameBet(room.bet, 'multiplayer');
-      if (!betResult) throw new Error('Impossible de déduire la mise');
+        // Rafraîchir le solde utilisateur
+        await refreshUser();
 
-      // Mettre à jour la salle
-      const updatedRoom = {
-        ...room,
-        players: [...room.players, user.pseudo],
-        playerIds: [...room.playerIds, user.id],
-        status: room.players.length + 1 >= room.maxPlayers ? 'playing' : 'waiting',
-        pot: room.pot + room.bet,
-        joinedAt: new Date().toISOString()
-      };
-
-      setRooms(prev => prev.map(r => r.id === roomId ? updatedRoom : r));
-      setCurrentRoom(updatedRoom);
-
-      // Simuler la latence réseau
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      return { success: true, room: updatedRoom };
+        return { success: true, room: updatedRoom };
+      } else {
+        return { success: false, error: response.message || 'Erreur inconnue' };
+      }
     } catch (error) {
+      console.error('Erreur rejoindre salle:', error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -186,105 +117,96 @@ export const GameRoomProvider = ({ children }) => {
   };
 
   // Quitter une salle
-  const leaveRoom = async (roomId) => {
+  const leaveRoom = async (roomCode) => {
     if (!user) return;
     
     setLoading(true);
     
     try {
-      const room = rooms.find(r => r.id === roomId);
-      if (!room || !room.players.includes(user.pseudo)) return;
-
-      if (room.status === 'playing') {
-        // En cours de partie = abandon (perte de la mise)
-        setRooms(prev => prev.map(r => 
-          r.id === roomId 
-            ? { ...r, status: 'finished', winner: room.players.find(p => p !== user.pseudo) }
-            : r
-        ));
-      } else {
-        // En attente = remboursement possible
-        // TODO: Logique de remboursement ici
-        
-        if (room.creator === user.pseudo) {
-          // Créateur quitte = suppression de la salle
-          setRooms(prev => prev.filter(r => r.id !== roomId));
-        } else {
-          // Joueur quitte = retrait de la salle
-          setRooms(prev => prev.map(r => 
-            r.id === roomId 
-              ? { 
-                  ...r, 
-                  players: r.players.filter(p => p !== user.pseudo),
-                  playerIds: r.playerIds.filter(id => id !== user.id),
-                  pot: r.pot - r.bet
-                }
-              : r
-          ));
-        }
+      const response = await api.leaveRoom(roomCode);
+      
+      // Retirer la salle de la liste ou mettre à jour son statut
+      setRooms(prev => prev.filter(r => r.code !== roomCode));
+      
+      if (currentRoom && currentRoom.code === roomCode) {
+        setCurrentRoom(null);
       }
 
-      setCurrentRoom(null);
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      // Rafraîchir le solde utilisateur (en cas de remboursement)
+      await refreshUser();
+
       return { success: true };
     } catch (error) {
+      console.error('Erreur quitter salle:', error);
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
   };
 
-  // Terminer une partie
-  const finishGame = async (roomId, winnerId) => {
+  // Marquer comme prêt
+  const markReady = async (roomCode) => {
     if (!user) return;
     
     try {
-      const room = rooms.find(r => r.id === roomId);
-      if (!room) return;
+      const response = await api.request(`/rooms/${roomCode}/ready`, {
+        method: 'POST'
+      });
+      
+      if (response.room) {
+        const updatedRoom = response.room;
+        
+        // Mettre à jour la salle
+        setRooms(prev => prev.map(r => 
+          r.code === roomCode ? updatedRoom : r
+        ));
+        setCurrentRoom(updatedRoom);
 
-      const winner = room.playerIds.indexOf(winnerId) !== -1 
-        ? room.players[room.playerIds.indexOf(winnerId)]
-        : null;
-
-      // Calculer les gains (90% du pot pour le gagnant)
-      const winnings = Math.floor(room.pot * 0.9);
-
-      // Mettre à jour la salle
-      const finishedRoom = {
-        ...room,
-        status: 'finished',
-        winner: winner,
-        winnerId: winnerId,
-        winnings: winnings,
-        finishedAt: new Date().toISOString()
-      };
-
-      setRooms(prev => prev.map(r => r.id === roomId ? finishedRoom : r));
-
-      // Ajouter les gains au gagnant
-      if (winnerId === user.id) {
-        addGameWinnings(winnings, 'multiplayer');
+        return { 
+          success: true, 
+          room: updatedRoom,
+          gameStarted: !!response.game_id,
+          gameId: response.game_id
+        };
       }
 
-      // Nettoyer les salles terminées après 5 minutes
-      setTimeout(() => {
-        setRooms(prev => prev.filter(r => r.id !== roomId));
-      }, 300000);
-
-      return { success: true, room: finishedRoom };
+      return { success: false, error: response.message };
     } catch (error) {
+      console.error('Erreur marquer prêt:', error);
       return { success: false, error: error.message };
     }
   };
 
-  // Obtenir les salles disponibles (filtrer les démonstrations si nécessaire)
+  // Obtenir les détails d'une salle
+  const getRoomDetails = async (roomCode) => {
+    try {
+      const response = await api.getRoom(roomCode);
+      return response.room;
+    } catch (error) {
+      console.error('Erreur détails salle:', error);
+      return null;
+    }
+  };
+
+  // Terminer une partie (pour compatibilité avec l'ancien code)
+  const finishGame = async (roomCode, winnerId) => {
+    // Cette logique sera gérée côté backend
+    // On rafraîchit juste les données
+    await Promise.all([
+      loadRooms(),
+      refreshUser(),
+      refreshWallet()
+    ]);
+
+    return { success: true };
+  };
+
+  // Obtenir les salles disponibles
   const getAvailableRooms = () => {
     return rooms.filter(room => 
       room.status === 'waiting' && 
-      room.players.length < room.maxPlayers &&
-      (!user || !room.players.includes(user.pseudo))
+      room.current_players < room.max_players &&
+      (!user || !room.players.some(p => p.id === user.id))
     );
   };
 
@@ -292,32 +214,97 @@ export const GameRoomProvider = ({ children }) => {
   const getUserRooms = () => {
     if (!user) return [];
     return rooms.filter(room => 
-      room.players.includes(user.pseudo) && 
+      room.players.some(p => p.id === user.id) &&
       room.status !== 'finished'
     );
   };
 
   // Rechercher des salles
   const searchRooms = (query) => {
+    if (!query.trim()) return rooms;
+    
     const searchTerm = query.toLowerCase();
     return rooms.filter(room => 
       room.name.toLowerCase().includes(searchTerm) ||
-      room.creator.toLowerCase().includes(searchTerm)
+      room.creator.pseudo.toLowerCase().includes(searchTerm)
     );
   };
 
+  // Rafraîchir les données
+  const refreshRooms = async () => {
+    await loadRooms();
+  };
+
+  // Obtenir le statut d'une salle en temps réel
+  const pollRoomStatus = async (roomCode, callback) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const roomDetails = await getRoomDetails(roomCode);
+        if (roomDetails) {
+          callback(roomDetails);
+          
+          // Mettre à jour la salle locale
+          setRooms(prev => prev.map(r => 
+            r.code === roomCode ? roomDetails : r
+          ));
+          
+          if (currentRoom && currentRoom.code === roomCode) {
+            setCurrentRoom(roomDetails);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur poll salle:', error);
+      }
+    }, 3000); // Poll toutes les 3 secondes
+
+    return () => clearInterval(pollInterval);
+  };
+
+  // Formatage des données pour l'affichage
+  const formatRoomForDisplay = (room) => {
+    return {
+      id: room.code, // Utiliser le code comme ID pour la compatibilité
+      code: room.code,
+      name: room.name,
+      creator: room.creator.pseudo,
+      creatorId: room.creator.id,
+      bet: room.bet_amount,
+      status: room.status,
+      players: room.players.map(p => p.pseudo),
+      playerIds: room.players.map(p => p.id),
+      maxPlayers: room.max_players,
+      createdAt: room.created_at,
+      pot: room.pot_amount,
+      commission: room.commission_amount,
+      gameSettings: {
+        roundsToWin: room.rounds_to_win,
+        timeLimit: room.time_limit,
+        allowSpectators: room.allow_spectators
+      },
+      isDemo: false // Les vraies salles ne sont jamais des démos
+    };
+  };
+
+  // Convertir les salles pour la compatibilité avec l'ancien code
+  const formattedRooms = rooms.map(formatRoomForDisplay);
+  const formattedCurrentRoom = currentRoom ? formatRoomForDisplay(currentRoom) : null;
+
   const value = {
-    rooms,
-    currentRoom,
+    rooms: formattedRooms,
+    currentRoom: formattedCurrentRoom,
     loading,
     createRoom,
     joinRoom,
     leaveRoom,
+    markReady,
     finishGame,
-    getAvailableRooms,
-    getUserRooms,
-    searchRooms,
-    setCurrentRoom
+    getAvailableRooms: () => getAvailableRooms().map(formatRoomForDisplay),
+    getUserRooms: () => getUserRooms().map(formatRoomForDisplay),
+    searchRooms: (query) => searchRooms(query).map(formatRoomForDisplay),
+    getRoomDetails,
+    refreshRooms,
+    pollRoomStatus,
+    setCurrentRoom: (room) => setCurrentRoom(room)
   };
 
   return (
