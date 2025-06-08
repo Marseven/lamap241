@@ -95,27 +95,9 @@ export default function AppHeader({
         <Link to="/" className="logo-section">
           <div className="logo-container">
             <img src="/logo.png" alt="LaMap241" className="header-logo" />
-            <span className="logo-text">LaMap241</span>
           </div>
         </Link>
-
-        {/* Navigation principale (optionnelle) */}
-        <nav className="main-nav">
-          <Link 
-            to="/rooms" 
-            className={`nav-link ${location.pathname === '/rooms' ? 'active' : ''}`}
-          >
-            <span className="nav-icon">🎮</span>
-            <span className="nav-text">Jouer</span>
-          </Link>
-          <Link 
-            to="/wallet" 
-            className={`nav-link ${location.pathname === '/wallet' ? 'active' : ''}`}
-          >
-            <span className="nav-icon">💰</span>
-            <span className="nav-text">Portefeuille</span>
-          </Link>
-        </nav>
+        
 
         {/* Infos utilisateur côté droit */}
         {user ? (
@@ -201,48 +183,45 @@ export default function AppHeader({
                       onClick={() => handleMenuItemClick('/profile')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">👤</span>
+                      
                       <div className="item-content">
                         <span className="item-label">Mon Profil</span>
                         <span className="item-desc">Informations personnelles</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
 
                     <button 
                       onClick={() => handleMenuItemClick('/wallet')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">💰</span>
                       <div className="item-content">
                         <span className="item-label">Portefeuille</span>
                         <span className="item-desc">Gérer vos finances</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
 
                     <button 
                       onClick={() => handleMenuItemClick('/history')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">📊</span>
                       <div className="item-content">
                         <span className="item-label">Historique</span>
                         <span className="item-desc">Vos parties et transactions</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
 
                     <button 
                       onClick={() => handleMenuItemClick('/achievements')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">🏆</span>
                       <div className="item-content">
                         <span className="item-label">Succès</span>
                         <span className="item-desc">Vos réalisations</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
                   </div>
 
@@ -254,36 +233,36 @@ export default function AppHeader({
                       onClick={() => handleMenuItemClick('/rules')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">📋</span>
+                     
                       <div className="item-content">
                         <span className="item-label">Règles du jeu</span>
                         <span className="item-desc">Comment jouer</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
 
                     <button 
                       onClick={() => handleMenuItemClick('/support')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">❓</span>
+                     
                       <div className="item-content">
                         <span className="item-label">Aide & Support</span>
                         <span className="item-desc">Besoin d'aide ?</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
 
                     <button 
                       onClick={() => handleMenuItemClick('/settings')}
                       className="dropdown-item"
                     >
-                      <span className="dropdown-icon">⚙️</span>
+                      
                       <div className="item-content">
                         <span className="item-label">Paramètres</span>
                         <span className="item-desc">Préférences du compte</span>
                       </div>
-                      <span className="item-arrow">→</span>
+                      
                     </button>
                   </div>
 
@@ -295,7 +274,7 @@ export default function AppHeader({
                       onClick={handleLogout}
                       className="dropdown-item logout-item"
                     >
-                      <span className="dropdown-icon">🚪</span>
+                      
                       <div className="item-content">
                         <span className="item-label">Déconnexion</span>
                         <span className="item-desc">Quitter votre session</span>
