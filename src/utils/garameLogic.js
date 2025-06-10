@@ -223,7 +223,7 @@ export function mustPlaySuit(playerCards, lastCard) {
   return null; // Peut jouer n'importe quelle famille
 }
 
-// Obtenir un message d'aide pour le joueur
+// Obtenir un message d'aide pour le joueur - AMÉLIORÉ
 export function getPlayerHelpMessage(playerCards, lastCard) {
   if (!lastCard) {
     return "Premier à jouer - Tu peux jouer n'importe quelle carte";
@@ -236,13 +236,43 @@ export function getPlayerHelpMessage(playerCards, lastCard) {
     const canTakeControl = playableCards.some((c) => c.value > lastCard.value);
 
     if (canTakeControl) {
-      return `Tu as du ${mustPlayFamily} - Joue plus fort que ${lastCard.value} pour prendre la main`;
+      return `Tu DOIS jouer du ${mustPlayFamily} - Joue plus fort que ${lastCard.value} pour prendre la main`;
     } else {
-      return `Tu as du ${mustPlayFamily} mais pas assez fort - Sacrifice ta plus petite carte`;
+      return `Tu DOIS jouer du ${mustPlayFamily} - Sacrifice ta plus petite carte (obligation)`;
     }
   } else {
     return "Tu n'as pas la famille demandée - Tu peux jouer n'importe quelle carte";
   }
+}
+
+// Vérifier le bonus Kora (avec un 3) - CORRIGÉ pour valoir 2 manches
+export function checkKoraBonus2(winnerCard, roundNumber) {
+  // Le Kora ne s'applique que si on gagne avec un 3
+  if (winnerCard && winnerCard.value === 3 && roundNumber === 5) {
+    return 2; // Kora = victoire qui vaut 2 manches
+  }
+  return 1; // Victoire normale = 1 manche
+}
+
+// Déterminer le vainqueur d'une manche avec bonus Kora
+export function determinerVainqueurMancheAvecKora(
+  roundsGagnés,
+  vainqueurDernierTour,
+  carteGagnante
+) {
+  const vainqueur = vainqueurDernierTour;
+  const koraBonus = carteGagnante && carteGagnante.value === 3 ? 2 : 1;
+
+  return {
+    vainqueur,
+    koraBonus,
+    message:
+      koraBonus === 2
+        ? `🎉 KORA ! ${
+            vainqueur === "player" ? "Tu gagnes" : "IA gagne"
+          } avec un 3 - Victoire = 2 manches !`
+        : `${vainqueur === "player" ? "Tu gagnes" : "IA gagne"} la manche`,
+  };
 }
 
 export default {
@@ -257,6 +287,7 @@ export default {
   checkKoraBonus,
   determineWinner,
   determineTurnWinner,
+  determinerVainqueurMancheAvecKora,
   getGameMessage,
   mustPlaySuit,
   getPlayerHelpMessage,

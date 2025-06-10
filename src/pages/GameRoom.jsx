@@ -281,11 +281,20 @@ export default function GameRoom() {
 
       // Vérifier si la manche est terminée
       if (nextRound > 5) {
-        const vainqueurManche = determinerVainqueurManche(newRoundsGagnés, vainqueurTour);
-        console.log(`🏆 Fin de manche - Vainqueur: ${vainqueurManche}`);
+        // Déterminer la carte gagnante pour vérifier le Kora
+        const carteGagnante = vainqueurTour === 'player' ? playerCard : iaCard;
         
-        if (vainqueurManche === 'player') {
-          playSound('victoire_manche');
+        // Utiliser la nouvelle fonction avec bonus Kora
+        const resultatManche = GarameLogic.determinerVainqueurMancheAvecKora(
+          newRoundsGagnés, 
+          vainqueurTour, 
+          carteGagnante
+        );
+        
+        console.log(`🏆 Fin de manche - Vainqueur: ${resultatManche.vainqueur}, Bonus: ${resultatManche.koraBonus}`);
+        
+        if (resultatManche.vainqueur === 'player') {
+          playSound(resultatManche.koraBonus === 2 ? 'kora_victoire' : 'victoire_manche');
         } else {
           playSound('defaite_manche');
         }
@@ -295,8 +304,10 @@ export default function GameRoom() {
           roundsGagnés: newRoundsGagnés,
           currentRound: nextRound,
           gamePhase: 'mancheEnd',
-          winner: vainqueurManche,
-          message: `Manche terminée - ${vainqueurManche === 'player' ? 'Tu gagnes' : 'IA gagne'} !`,
+          winner: resultatManche.vainqueur,
+          koraBonus: resultatManche.koraBonus,
+          carteGagnante: carteGagnante,
+          message: resultatManche.message,
           currentTurn: null,
           waitingForTurnResolution: false
         };
@@ -325,10 +336,13 @@ export default function GameRoom() {
   // Gérer la fin d'une manche
   const handleMancheEnd = (vainqueurManche) => {
     setAiGameState(prev => {
-      const newScoreJoueur = prev.scoreJoueur + (vainqueurManche === 'player' ? 1 : 0);
-      const newScoreIA = prev.scoreIA + (vainqueurManche === 'ia' ? 1 : 0);
+      // Utiliser le bonus Kora s'il y en a un
+      const koraBonus = prev.koraBonus || 1;
       
-      console.log(`📊 Scores: Joueur ${newScoreJoueur} - IA ${newScoreIA}`);
+      const newScoreJoueur = prev.scoreJoueur + (vainqueurManche === 'player' ? koraBonus : 0);
+      const newScoreIA = prev.scoreIA + (vainqueurManche === 'ia' ? koraBonus : 0);
+      
+      console.log(`📊 Scores: Joueur ${newScoreJoueur} - IA ${newScoreIA} ${koraBonus === 2 ? '(KORA +2!)' : ''}`);
 
       // Vérifier si la partie est terminée
       if (newScoreJoueur >= prev.nombreManchesPourGagner) {
@@ -339,7 +353,9 @@ export default function GameRoom() {
           scoreJoueur: newScoreJoueur,
           gamePhase: 'gameEnd',
           winner: 'player',
-          message: '🎉 Vous avez gagné la partie !'
+          message: koraBonus === 2 ? 
+            '🎉 Vous avez gagné la partie avec un KORA !' : 
+            '🎉 Vous avez gagné la partie !'
         };
       }
 
@@ -351,7 +367,9 @@ export default function GameRoom() {
           scoreIA: newScoreIA,
           gamePhase: 'gameEnd',
           winner: 'ia',
-          message: '😢 L\'IA a gagné la partie.'
+          message: koraBonus === 2 ? 
+            '😢 L\'IA a gagné la partie avec un KORA.' : 
+            '😢 L\'IA a gagné la partie.'
         };
       }
 
@@ -366,8 +384,10 @@ export default function GameRoom() {
         mancheActuelle: nextManche,
         joueurCommence: !prev.joueurCommence, // Alternance
         gamePhase: 'playing',
-        message: `Manche ${nextManche} dans 3 secondes...`,
-        waitingForTurnResolution: false
+        message: `Manche ${nextManche} dans 3 secondes...${koraBonus === 2 ? ' (Bonus KORA appliqué !)' : ''}`,
+        waitingForTurnResolution: false,
+        koraBonus: 1, // Reset du bonus
+        carteGagnante: null
       };
 
       // Démarrer la nouvelle manche après un délai
@@ -558,8 +578,12 @@ export default function GameRoom() {
           <div>Phase: {currentState.gamePhase}</div>
           <div>Waiting: {currentState.waitingForTurnResolution ? 'YES' : 'NO'}</div>
           <div>Playable: {boardData.playableCards?.length || 0}</div>
+          <div>Kora: {currentState.koraBonus > 1 ? `x${currentState.koraBonus}` : 'None'}</div>
           {currentState.lastCard && (
             <div>LastCard: {currentState.lastCard.value}{currentState.lastCard.suit}</div>
+          )}
+          {currentState.carteGagnante && (
+            <div>WinCard: {currentState.carteGagnante.value}{currentState.carteGagnante.suit}</div>
           )}
           {aiThinking && <div className="text-yellow-400">🤖 IA réfléchit...</div>}
         </div>
@@ -640,13 +664,55 @@ export default function GameRoom() {
               Score des manches : 🧍 {currentState.scoreJoueur} - 🤖 {currentState.scoreIA}
             </div>
             {currentState.gamePhase === 'gameEnd' && (
-              <div className="mt-4 text-center space-y-2">
-                <div className="text-lg font-bold">
+              <div className="mt-4 text-center space-y-4">
+                <div className="text-xl font-bold mb-4">
                   {currentState.winner === 'player' ? '🎉 Félicitations ! Tu as gagné !' : '😢 L\'IA a gagné cette fois.'}
                 </div>
-                <button onClick={handleNewGame} className="btn btn-success">
-                  🎮 Nouvelle Partie
-                </button>
+                
+                {/* Résumé de la partie */}
+                <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4 mb-4">
+                  <div className="text-sm text-gray-300 mb-2">Résumé de la partie :</div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-blue-400">🧍 Vous</div>
+                      <div className="text-2xl font-bold">{currentState.scoreJoueur}</div>
+                      <div className="text-gray-400">manches gagnées</div>
+                    </div>
+                    <div>
+                      <div className="text-red-400">🤖 IA</div>
+                      <div className="text-2xl font-bold">{currentState.scoreIA}</div>
+                      <div className="text-gray-400">manches gagnées</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center text-xs text-gray-500">
+                    Partie terminée en {currentState.mancheActuelle} manche{currentState.mancheActuelle > 1 ? 's' : ''}
+                  </div>
+                </div>
+
+                {/* Boutons d'action */}
+                <div className="flex gap-3 justify-center">
+                  <button 
+                    onClick={handleNewGame} 
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg transition-colors shadow-lg"
+                  >
+                    🎮 Nouvelle Partie
+                  </button>
+                  
+                  <button 
+                    onClick={() => navigate('/')} 
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  >
+                    🏠 Accueil
+                  </button>
+                </div>
+
+                {/* Message d'encouragement */}
+                <div className="text-sm text-gray-400 mt-3">
+                  {currentState.winner === 'player' ? 
+                    (currentState.koraBonus === 2 ? '🔥 KORA ! Victoire magistrale avec un 3 !' : '🔥 Excellent ! Vous maîtrisez le Garame !') : 
+                    '💪 Ne lâchez rien ! La prochaine sera la bonne !'
+                  }
+                </div>
               </div>
             )}
           </>
