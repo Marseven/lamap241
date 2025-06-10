@@ -1,4 +1,4 @@
-// Utilitaires pour le jeu Garame
+// Utilitaires pour le jeu Garame - VERSION CORRIGÉE
 
 // Créer un deck sans As, 2, Q, K, J et 10♠
 export function createGarameDeck() {
@@ -42,7 +42,7 @@ export function checkAutoWin(cards) {
   return { autoWin: false };
 }
 
-// Vérifier si une carte peut être jouée
+// Vérifier si une carte peut être jouée - LOGIQUE CORRIGÉE
 export function canPlayCard(card, lastCard, playerCards) {
   // Si aucune carte sur la table, on peut jouer n'importe quoi
   if (!lastCard) return true;
@@ -54,68 +54,74 @@ export function canPlayCard(card, lastCard, playerCards) {
   if (sameFamily.length > 0) {
     // On ne peut jouer que des cartes de la même famille
     if (card.suit !== lastCard.suit) return false;
-
-    // Et de valeur supérieure (pour prendre la main)
-    return card.value > lastCard.value;
+    // Toutes les cartes de la même famille sont jouables (pas besoin d'être supérieure)
+    return true;
   }
 
   // Si on n'a pas de cartes de la même famille, on peut jouer n'importe quelle carte
   return true;
 }
 
-// Obtenir les cartes jouables
+// Obtenir les cartes jouables - LOGIQUE CORRIGÉE
 export function getPlayableCards(playerCards, lastCard) {
-  if (!lastCard) return playerCards; // Premier coup
+  if (!lastCard) return playerCards; // Premier coup - toutes les cartes sont jouables
 
   const sameFamily = playerCards.filter((c) => c.suit === lastCard.suit);
 
   if (sameFamily.length > 0) {
-    // On doit jouer de la même famille si possible
-    return sameFamily.filter((c) => c.value > lastCard.value);
+    // On a des cartes de la même famille - on DOIT jouer de la même famille
+    // Toutes les cartes de la même famille sont jouables
+    return sameFamily;
   }
 
-  // Si pas de cartes de la même famille, toutes sont jouables
+  // Si pas de cartes de la même famille, toutes les cartes sont jouables
   return playerCards;
 }
 
-// Déterminer qui prend la main
-export function whoTakesControl(playerCard, opponentCard) {
-  // Même famille, plus haute valeur prend
-  if (playerCard.suit === opponentCard.suit) {
-    return playerCard.value > opponentCard.value ? "player" : "opponent";
+// Déterminer qui prend la main - LOGIQUE CORRIGÉE
+export function whoTakesControl(card1, card2, whoPlayedFirst) {
+  // Si les cartes sont de la même famille
+  if (card1.suit === card2.suit) {
+    // La plus haute valeur prend la main
+    if (card1.value > card2.value) {
+      return whoPlayedFirst === "player" ? "player" : "opponent";
+    } else {
+      return whoPlayedFirst === "player" ? "opponent" : "player";
+    }
   }
 
-  // Familles différentes, celui qui a joué en dernier garde la main
-  return "opponent"; // L'adversaire garde si familles différentes
+  // Si les familles sont différentes, celui qui a joué en premier garde la main
+  return whoPlayedFirst;
 }
 
-// IA choisit une carte selon les règles
+// IA choisit une carte selon les règles - LOGIQUE CORRIGÉE
 export function aiChooseCard(aiCards, lastCard) {
   if (!lastCard) {
-    // Premier coup : jouer la plus haute carte
-    return aiCards.reduce((max, card) => (card.value > max.value ? card : max));
+    // Premier coup : jouer une carte moyenne-forte (pas la plus forte)
+    const sortedCards = [...aiCards].sort((a, b) => b.value - a.value);
+    return sortedCards[1] || sortedCards[0];
   }
 
   const sameFamily = aiCards.filter((c) => c.suit === lastCard.suit);
 
   if (sameFamily.length > 0) {
-    // Cartes de la même famille disponibles
+    // Cartes de la même famille disponibles - on DOIT jouer de la même famille
     const higher = sameFamily.filter((c) => c.value > lastCard.value);
 
     if (higher.length > 0) {
-      // Jouer la plus petite carte qui peut prendre
+      // On peut prendre la main - jouer la plus petite carte qui peut prendre
       return higher.reduce((min, card) =>
         card.value < min.value ? card : min
       );
     } else {
-      // Pas de carte supérieure, jouer la plus petite de la famille
+      // Pas de carte supérieure - jouer la plus petite de la famille (sacrifice)
       return sameFamily.reduce((min, card) =>
         card.value < min.value ? card : min
       );
     }
   }
 
-  // Pas de cartes de la même famille, jouer la plus petite carte
+  // Pas de cartes de la même famille - jouer la plus petite carte possible
   return aiCards.reduce((min, card) => (card.value < min.value ? card : min));
 }
 
@@ -150,7 +156,31 @@ export function determineWinner(playerWins) {
   return playerWins[4]; // Index 4 = tour 5
 }
 
-// Formater le message de jeu
+// Déterminer qui gagne un tour spécifique - NOUVELLE FONCTION
+export function determineTurnWinner(playerCard, iaCard, whoPlayedFirst) {
+  console.log(`🎯 Résolution du tour:`, {
+    playerCard: `${playerCard.value}${playerCard.suit}`,
+    iaCard: `${iaCard.value}${iaCard.suit}`,
+    whoPlayedFirst,
+  });
+
+  // Si même famille, la plus haute valeur gagne
+  if (playerCard.suit === iaCard.suit) {
+    const winner = playerCard.value > iaCard.value ? "player" : "ia";
+    console.log(
+      `Same suit - Winner: ${winner} (${playerCard.value} vs ${iaCard.value})`
+    );
+    return winner;
+  }
+
+  // Familles différentes : celui qui a joué en premier garde la main
+  console.log(
+    `Different suits - First player (${whoPlayedFirst}) keeps control`
+  );
+  return whoPlayedFirst;
+}
+
+// Formater le message de jeu - AMÉLIORÉ
 export function getGameMessage(gameState, currentTurn, roundNumber) {
   if (gameState.autoWin) {
     return `🎉 ${gameState.autoWin.reason} - Victoire automatique !`;
@@ -164,10 +194,54 @@ export function getGameMessage(gameState, currentTurn, roundNumber) {
     }${bonusText}`;
   }
 
+  if (gameState.gamePhase === "mancheEnd") {
+    return (
+      gameState.message ||
+      `Manche terminée - ${
+        gameState.winner === "player" ? "Tu gagnes" : "IA gagne"
+      } !`
+    );
+  }
+
   if (currentTurn === "player") {
     return `Tour ${roundNumber}/5 - À toi de jouer !`;
   } else {
     return `Tour ${roundNumber}/5 - Tour de l'IA...`;
+  }
+}
+
+// Vérifier si le joueur doit jouer une famille spécifique
+export function mustPlaySuit(playerCards, lastCard) {
+  if (!lastCard) return null;
+
+  const sameFamily = playerCards.filter((c) => c.suit === lastCard.suit);
+
+  if (sameFamily.length > 0) {
+    return lastCard.suit; // Doit jouer cette famille
+  }
+
+  return null; // Peut jouer n'importe quelle famille
+}
+
+// Obtenir un message d'aide pour le joueur
+export function getPlayerHelpMessage(playerCards, lastCard) {
+  if (!lastCard) {
+    return "Premier à jouer - Tu peux jouer n'importe quelle carte";
+  }
+
+  const playableCards = getPlayableCards(playerCards, lastCard);
+  const mustPlayFamily = mustPlaySuit(playerCards, lastCard);
+
+  if (mustPlayFamily) {
+    const canTakeControl = playableCards.some((c) => c.value > lastCard.value);
+
+    if (canTakeControl) {
+      return `Tu as du ${mustPlayFamily} - Joue plus fort que ${lastCard.value} pour prendre la main`;
+    } else {
+      return `Tu as du ${mustPlayFamily} mais pas assez fort - Sacrifice ta plus petite carte`;
+    }
+  } else {
+    return "Tu n'as pas la famille demandée - Tu peux jouer n'importe quelle carte";
   }
 }
 
@@ -182,5 +256,8 @@ export default {
   aiChooseCard,
   checkKoraBonus,
   determineWinner,
+  determineTurnWinner,
   getGameMessage,
+  mustPlaySuit,
+  getPlayerHelpMessage,
 };

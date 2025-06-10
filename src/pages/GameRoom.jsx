@@ -29,147 +29,200 @@ export default function GameRoom() {
   const [aiDecisionMaker] = useState(() => new AIDecisionMaker());
   const [aiThinking, setAiThinking] = useState(false);
 
-  // État local pour l'IA avec les vraies règles
+  // État local pour l'IA suivant l'algorithme corrigé
   const [aiGameState, setAiGameState] = useState({
+    // Scores de partie (manches gagnées)
+    scoreJoueur: 0,
+    scoreIA: 0,
+    mancheActuelle: 1,
+    nombreManchesPourGagner: 5,
+    
+    // État de la manche actuelle
     playerCards: [],
     iaCards: [],
     playerTableCards: [],
     opponentTableCards: [],
+    
+    // Logique de tour
     currentRound: 1,
-    roundWins: [], // Qui a gagné chaque tour
-    currentTurn: 'player',
-    lastCard: null, // Dernière carte jouée
-    hasControl: 'player', // Qui a la main
-    score: { player: 0, ia: 0 },
-    message: 'Nouvelle partie - Tu commences !',
-    gamePhase: 'playing', // playing, roundEnd, gameEnd
-    autoWin: null,
-    koraBonus: 1
+    roundsGagnés: [], // Qui a gagné chaque tour de la manche actuelle
+    main: 'player', // Qui a la main pour jouer en premier
+    currentTurn: 'player', // Qui doit jouer maintenant
+    lastCard: null,
+    waitingForTurnResolution: false, // Nouveau flag pour éviter les doubles résolutions
+    
+    // Statut du jeu
+    gamePhase: 'playing', // playing, mancheEnd, gameEnd
+    message: '',
+    winner: null,
+    koraBonus: 1,
+    
+    // Meta
+    joueurCommence: true, // Alternance entre les manches
   });
 
-  // Logique pour jeu contre l'IA avec vraies règles
-  const startNewAiGame = () => {
-    const deck = GarameLogic.createGarameDeck();
-    const playerCards = deck.slice(0, 5);
-    const iaCards = deck.slice(5, 10);
-    
-    // Vérifier les victoires automatiques
-    const playerAutoWin = GarameLogic.checkAutoWin(playerCards);
-    const iaAutoWin = GarameLogic.checkAutoWin(iaCards);
-    
-    if (playerAutoWin.autoWin) {
-      setAiGameState({
-        playerCards,
-        iaCards,
-        playerTableCards: [],
-        opponentTableCards: [],
-        currentRound: 1,
-        roundWins: [],
-        currentTurn: 'player',
-        lastCard: null,
-        hasControl: 'player',
-        gamePhase: 'gameEnd',
-        autoWin: playerAutoWin,
-        winner: 'player',
-        message: `🎉 ${playerAutoWin.reason} - Tu gagnes automatiquement !`,
-        koraBonus: 1,
-        score: { player: 1, ia: 0 }
-      });
-      return;
-    }
-    
-    if (iaAutoWin.autoWin) {
-      setAiGameState({
-        playerCards,
-        iaCards,
-        playerTableCards: [],
-        opponentTableCards: [],
-        currentRound: 1,
-        roundWins: [],
-        currentTurn: 'player',
-        lastCard: null,
-        hasControl: 'player',
-        gamePhase: 'gameEnd',
-        autoWin: iaAutoWin,
-        winner: 'ia',
-        message: `😔 IA gagne automatiquement (${iaAutoWin.reason})`,
-        koraBonus: 1,
-        score: { player: 0, ia: 1 }
-      });
-      return;
-    }
+  // Sons (placeholders pour l'instant)
+  const playSound = (soundType) => {
+    console.log(`🔊 Playing sound: ${soundType}`);
+    // TODO: Implémenter les vrais sons
+  };
+
+  // Initialiser une nouvelle partie complète
+  const startNewGame = () => {
+    console.log('🎮 Démarrage d\'une nouvelle partie');
+    playSound('carte_posée');
     
     setAiGameState({
-      playerCards,
-      iaCards,
+      scoreJoueur: 0,
+      scoreIA: 0,
+      mancheActuelle: 1,
+      nombreManchesPourGagner: 5,
+      playerCards: [],
+      iaCards: [],
       playerTableCards: [],
       opponentTableCards: [],
       currentRound: 1,
-      roundWins: [],
+      roundsGagnés: [],
+      main: Math.random() > 0.5 ? 'player' : 'ia', // Tirage au sort
       currentTurn: 'player',
       lastCard: null,
-      hasControl: 'player',
-      score: { player: 0, ia: 0 },
-      message: GarameLogic.getGameMessage({}, 'player', 1),
+      waitingForTurnResolution: false,
       gamePhase: 'playing',
-      autoWin: null,
-      koraBonus: 1
+      message: 'Nouvelle partie - Premier à 5 manches !',
+      winner: null,
+      koraBonus: 1,
+      joueurCommence: Math.random() > 0.5,
+    });
+
+    // Démarrer la première manche
+    setTimeout(() => startNewManche(), 500);
+  };
+
+  // Initialiser une nouvelle manche
+  const startNewManche = () => {
+    setAiGameState(prev => {
+      console.log(`🎯 Manche ${prev.mancheActuelle} commence`);
+      playSound('carte_posée');
+      
+      const deck = GarameLogic.createGarameDeck();
+      const playerCards = deck.slice(0, 5);
+      const iaCards = deck.slice(5, 10);
+      
+      // Vérifier les victoires automatiques
+      const playerAutoWin = GarameLogic.checkAutoWin(playerCards);
+      const iaAutoWin = GarameLogic.checkAutoWin(iaCards);
+      
+      if (playerAutoWin.autoWin) {
+        console.log('🎉 Victoire automatique du joueur!');
+        return {
+          ...prev,
+          playerCards,
+          iaCards,
+          playerTableCards: [],
+          opponentTableCards: [],
+          currentRound: 1,
+          roundsGagnés: [],
+          gamePhase: 'mancheEnd',
+          winner: 'player',
+          message: `🎉 ${playerAutoWin.reason} - Tu gagnes la manche !`,
+          currentTurn: null,
+          waitingForTurnResolution: false
+        };
+      }
+      
+      if (iaAutoWin.autoWin) {
+        console.log('😔 Victoire automatique de l\'IA');
+        return {
+          ...prev,
+          playerCards,
+          iaCards,
+          playerTableCards: [],
+          opponentTableCards: [],
+          currentRound: 1,
+          roundsGagnés: [],
+          gamePhase: 'mancheEnd',
+          winner: 'ia',
+          message: `😔 IA gagne automatiquement (${iaAutoWin.reason})`,
+          currentTurn: null,
+          waitingForTurnResolution: false
+        };
+      }
+      
+      // Déterminer qui commence cette manche
+      const main = prev.joueurCommence ? 'player' : 'ia';
+      
+      return {
+        ...prev,
+        playerCards,
+        iaCards,
+        playerTableCards: [],
+        opponentTableCards: [],
+        currentRound: 1,
+        roundsGagnés: [],
+        main,
+        currentTurn: main,
+        lastCard: null,
+        waitingForTurnResolution: false,
+        gamePhase: 'playing',
+        message: `Manche ${prev.mancheActuelle} - ${main === 'player' ? 'Tu commences' : 'IA commence'} !`,
+        winner: null,
+        koraBonus: 1
+      };
     });
   };
 
-  // Initialiser le jeu IA
+  // Initialiser le jeu au démarrage
   useEffect(() => {
     if (gameMode === 'ai') {
-      startNewAiGame();
+      startNewGame();
     }
   }, [gameMode]);
 
-  // Effet pour gérer les tours de l'IA
+  // Gérer les tours de l'IA
   useEffect(() => {
     if (gameMode === 'ai' && 
         aiGameState.currentTurn === 'ia' && 
         aiGameState.gamePhase === 'playing' &&
         !aiThinking &&
+        !aiGameState.waitingForTurnResolution &&
         aiGameState.iaCards.length > 0) {
       
-      console.log('🤖 IA doit jouer, état:', {
-        currentTurn: aiGameState.currentTurn,
-        hasControl: aiGameState.hasControl,
-        lastCard: aiGameState.lastCard,
-        cardsCount: aiGameState.iaCards.length,
-        currentRound: aiGameState.currentRound
-      });
+      console.log('🤖 IA doit jouer');
       
-      // Délai différent selon si l'IA a la main ou répond
-      const delay = aiGameState.hasControl === 'ia' ? 1000 : 1500;
       setTimeout(() => {
         executeAITurn();
-      }, delay);
+      }, 1000);
     }
-  }, [aiGameState.currentTurn, aiGameState.gamePhase, aiThinking, gameMode, aiGameState.hasControl]);
+  }, [aiGameState.currentTurn, aiGameState.gamePhase, aiThinking, gameMode, aiGameState.waitingForTurnResolution]);
 
-  // Fonction pour exécuter le tour de l'IA
+  // Gérer la fin de manche automatiquement
+  useEffect(() => {
+    if (aiGameState.gamePhase === 'mancheEnd' && aiGameState.winner) {
+      setTimeout(() => {
+        handleMancheEnd(aiGameState.winner);
+      }, 2000);
+    }
+  }, [aiGameState.gamePhase, aiGameState.winner]);
+
+  // Exécuter le tour de l'IA
   const executeAITurn = async () => {
-    if (aiThinking) return; // Éviter les appels multiples
+    if (aiThinking || aiGameState.waitingForTurnResolution) return;
     
     setAiThinking(true);
     
     try {
-      // Délai pour simulation de réflexion
       await new Promise(resolve => setTimeout(resolve, 800));
       
       setAiGameState(prev => {
-        if (prev.currentTurn !== 'ia' || prev.iaCards.length === 0 || prev.gamePhase !== 'playing') {
-          console.log('🤖 Conditions IA non remplies, abandon du tour');
+        if (prev.currentTurn !== 'ia' || prev.iaCards.length === 0 || prev.gamePhase !== 'playing' || prev.waitingForTurnResolution) {
           return prev;
         }
 
-        // L'IA prend sa décision
         const decision = aiDecisionMaker.makeDecision(prev.iaCards, {
           lastCard: prev.lastCard,
           currentRound: prev.currentRound,
-          roundWins: prev.roundWins,
-          hasControl: prev.hasControl,
+          roundWins: prev.roundsGagnés,
+          hasControl: prev.main,
           playerCards: prev.playerCards,
           playerTableCards: prev.playerTableCards,
           opponentTableCards: prev.opponentTableCards
@@ -178,84 +231,34 @@ export default function GameRoom() {
         const aiCard = decision.card;
         const newIaCards = prev.iaCards.filter(c => c !== aiCard);
         
-        console.log(`🤖 IA joue:`, {
-          card: `${aiCard.value}${aiCard.suit}`,
-          reason: decision.reason,
-          hadControl: prev.hasControl
-        });
-        
-        // Déterminer qui prend la main après ce coup
-        let newControl;
-        let roundWinner = null;
-        
-        if (prev.hasControl === 'ia') {
-          // IA a la main, elle impose sa carte
-          newControl = 'player'; // Le joueur doit répondre
-        } else {
-          // IA répond à la carte du joueur
-          if (prev.lastCard && aiCard.suit === prev.lastCard.suit && aiCard.value > prev.lastCard.value) {
-            newControl = 'ia'; // IA reprend la main
-            roundWinner = 'ia';
-          } else {
-            newControl = 'player'; // Le joueur garde/reprend la main
-            roundWinner = 'player';
-          }
-        }
-        
-        const newRoundWins = roundWinner ? [...prev.roundWins, roundWinner] : prev.roundWins;
-        const nextRound = roundWinner ? prev.currentRound + 1 : prev.currentRound;
-        
-        console.log(`🎯 Résultat du tour:`, {
-          roundWinner,
-          newControl,
-          nextRound,
-          totalRounds: newRoundWins.length
-        });
-        
-        // Vérifier si c'est la fin du jeu
-        if (newRoundWins.length === 5) {
-          const finalWinner = GarameLogic.determineWinner(newRoundWins);
-          const bonus = finalWinner === 'ia' && aiCard.value === 3 ? 2 : 1;
-          
-          console.log(`🏆 Fin de partie:`, { finalWinner, bonus });
-          
-          return {
-            ...prev,
-            iaCards: newIaCards,
-            opponentTableCards: [...prev.opponentTableCards, aiCard],
-            lastCard: aiCard,
-            roundWins: newRoundWins,
-            hasControl: newControl,
-            currentRound: nextRound,
-            gamePhase: 'gameEnd',
-            winner: finalWinner,
-            koraBonus: bonus,
-            message: `🎉 ${finalWinner === 'ia' ? 'IA gagne' : 'Tu gagnes'} la partie !`,
-            score: {
-              ...prev.score,
-              [finalWinner]: prev.score[finalWinner] + bonus
-            },
-            currentTurn: null
-          };
-        }
-        
-        // Continuer le jeu
-        const nextTurn = roundWinner ? newControl : 'player';
-        const statusMessage = roundWinner ? 
-          `${roundWinner === 'ia' ? 'IA prend' : 'Tu prends'} la main !` :
-          (newControl === 'player' ? 'À toi de répondre' : 'IA a toujours la main');
-        
-        return {
+        console.log(`🤖 IA joue: ${aiCard.value}${aiCard.suit} - ${decision.reason}`);
+        playSound('carte_posée');
+
+        const newState = {
           ...prev,
           iaCards: newIaCards,
           opponentTableCards: [...prev.opponentTableCards, aiCard],
           lastCard: aiCard,
-          roundWins: newRoundWins,
-          currentRound: nextRound,
-          hasControl: newControl,
-          currentTurn: nextTurn,
-          message: `IA joue ${aiCard.value}${aiCard.suit} - ${statusMessage}`
         };
+
+        // Si l'IA a la main, le joueur doit répondre
+        if (prev.main === 'ia') {
+          newState.message = `IA joue ${aiCard.value}${aiCard.suit} - À toi de répondre`;
+          newState.currentTurn = 'player';
+        } else {
+          // IA répond au joueur - résoudre le tour
+          newState.currentTurn = null;
+          newState.waitingForTurnResolution = true;
+          newState.message = `IA joue ${aiCard.value}${aiCard.suit} - Résolution du tour...`;
+          
+          // Résoudre après un court délai
+          setTimeout(() => {
+            const playerCard = prev.playerTableCards[prev.playerTableCards.length - 1];
+            resolveTurn(playerCard, aiCard, prev.main);
+          }, 1500);
+        }
+
+        return newState;
       });
       
     } finally {
@@ -263,96 +266,168 @@ export default function GameRoom() {
     }
   };
 
-  const playAiCard = (card) => {
-    if (aiGameState.currentTurn !== 'player' || aiGameState.gamePhase !== 'playing') return;
+  // Résoudre qui gagne le tour et passer au suivant
+  const resolveTurn = (playerCard, iaCard, whoPlayedFirst) => {
+    setAiGameState(prev => {
+      if (!prev.waitingForTurnResolution) return prev;
 
-    // Vérifier si la carte est jouable
+      // Utiliser la nouvelle fonction de résolution
+      const vainqueurTour = GarameLogic.determineTurnWinner(playerCard, iaCard, whoPlayedFirst);
+      
+      const newRoundsGagnés = [...prev.roundsGagnés, vainqueurTour];
+      const nextRound = prev.currentRound + 1;
+      
+      console.log(`🎯 Tour ${prev.currentRound} - Vainqueur: ${vainqueurTour}`);
+
+      // Vérifier si la manche est terminée
+      if (nextRound > 5) {
+        const vainqueurManche = determinerVainqueurManche(newRoundsGagnés, vainqueurTour);
+        console.log(`🏆 Fin de manche - Vainqueur: ${vainqueurManche}`);
+        
+        if (vainqueurManche === 'player') {
+          playSound('victoire_manche');
+        } else {
+          playSound('defaite_manche');
+        }
+
+        return {
+          ...prev,
+          roundsGagnés: newRoundsGagnés,
+          currentRound: nextRound,
+          gamePhase: 'mancheEnd',
+          winner: vainqueurManche,
+          message: `Manche terminée - ${vainqueurManche === 'player' ? 'Tu gagnes' : 'IA gagne'} !`,
+          currentTurn: null,
+          waitingForTurnResolution: false
+        };
+      }
+
+      // Continuer la manche
+      return {
+        ...prev,
+        roundsGagnés: newRoundsGagnés,
+        currentRound: nextRound,
+        main: vainqueurTour,
+        currentTurn: vainqueurTour,
+        message: `Tour ${nextRound}/5 - ${vainqueurTour === 'player' ? 'Tu as' : 'IA a'} la main`,
+        lastCard: null, // Reset pour le prochain tour
+        waitingForTurnResolution: false
+      };
+    });
+  };
+
+  // Déterminer le vainqueur d'une manche
+  const determinerVainqueurManche = (roundsGagnés, mainAuDernierTour) => {
+    // Dans le Garame, celui qui a la main au dernier tour gagne la manche
+    return mainAuDernierTour;
+  };
+
+  // Gérer la fin d'une manche
+  const handleMancheEnd = (vainqueurManche) => {
+    setAiGameState(prev => {
+      const newScoreJoueur = prev.scoreJoueur + (vainqueurManche === 'player' ? 1 : 0);
+      const newScoreIA = prev.scoreIA + (vainqueurManche === 'ia' ? 1 : 0);
+      
+      console.log(`📊 Scores: Joueur ${newScoreJoueur} - IA ${newScoreIA}`);
+
+      // Vérifier si la partie est terminée
+      if (newScoreJoueur >= prev.nombreManchesPourGagner) {
+        console.log('🎉 Joueur gagne la partie!');
+        playSound('victoire_finale');
+        return {
+          ...prev,
+          scoreJoueur: newScoreJoueur,
+          gamePhase: 'gameEnd',
+          winner: 'player',
+          message: '🎉 Vous avez gagné la partie !'
+        };
+      }
+
+      if (newScoreIA >= prev.nombreManchesPourGagner) {
+        console.log('😢 IA gagne la partie');
+        playSound('defaite_finale');
+        return {
+          ...prev,
+          scoreIA: newScoreIA,
+          gamePhase: 'gameEnd',
+          winner: 'ia',
+          message: '😢 L\'IA a gagné la partie.'
+        };
+      }
+
+      // Continuer avec une nouvelle manche
+      const nextManche = prev.mancheActuelle + 1;
+      console.log(`🔄 Préparation manche ${nextManche}`);
+      
+      const newState = {
+        ...prev,
+        scoreJoueur: newScoreJoueur,
+        scoreIA: newScoreIA,
+        mancheActuelle: nextManche,
+        joueurCommence: !prev.joueurCommence, // Alternance
+        gamePhase: 'playing',
+        message: `Manche ${nextManche} dans 3 secondes...`,
+        waitingForTurnResolution: false
+      };
+
+      // Démarrer la nouvelle manche après un délai
+      setTimeout(() => startNewManche(), 3000);
+
+      return newState;
+    });
+  };
+
+  // Jouer une carte (joueur)
+  const playAiCard = (card) => {
+    if (aiGameState.currentTurn !== 'player' || aiGameState.gamePhase !== 'playing' || aiGameState.waitingForTurnResolution) {
+      console.log('Impossible de jouer maintenant:', {
+        currentTurn: aiGameState.currentTurn,
+        gamePhase: aiGameState.gamePhase,
+        waiting: aiGameState.waitingForTurnResolution
+      });
+      return;
+    }
+
+    // Vérifier si la carte est jouable avec la logique corrigée
     const playableCards = GarameLogic.getPlayableCards(aiGameState.playerCards, aiGameState.lastCard);
     if (!playableCards.some(pc => pc.value === card.value && pc.suit === card.suit)) {
-      addNotification('error', 'Cette carte ne peut pas être jouée !');
+      const helpMessage = GarameLogic.getPlayerHelpMessage(aiGameState.playerCards, aiGameState.lastCard);
+      addNotification('error', `Cette carte ne peut pas être jouée ! ${helpMessage}`);
       return;
     }
 
     const newPlayerCards = aiGameState.playerCards.filter(c => c !== card);
     
+    console.log(`👤 Joueur joue: ${card.value}${card.suit}`);
+    playSound('carte_posée');
+
     setAiGameState(prev => {
-      let newControl;
-      let roundWinner = null;
-      
-      if (prev.hasControl === 'player') {
-        // Joueur a la main, il impose sa carte
-        newControl = 'ia'; // L'IA doit répondre
-      } else {
-        // Joueur répond à la carte de l'IA
-        if (prev.lastCard && card.suit === prev.lastCard.suit && card.value > prev.lastCard.value) {
-          newControl = 'player'; // Joueur reprend la main
-          roundWinner = 'player';
-        } else {
-          newControl = 'ia'; // L'IA garde la main
-          roundWinner = 'ia';
-        }
-      }
-      
-      const newRoundWins = roundWinner ? [...prev.roundWins, roundWinner] : prev.roundWins;
-      const nextRound = roundWinner ? prev.currentRound + 1 : prev.currentRound;
-      
-      // Vérifier si c'est la fin du jeu
-      if (newRoundWins.length === 5) {
-        const finalWinner = GarameLogic.determineWinner(newRoundWins);
-        const bonus = finalWinner === 'player' && card.value === 3 ? 
-          GarameLogic.checkKoraBonus(newRoundWins, [...prev.playerTableCards, card], 5) : 1;
-        
-        return {
-          ...prev,
-          playerCards: newPlayerCards,
-          playerTableCards: [...prev.playerTableCards, card],
-          lastCard: card,
-          roundWins: newRoundWins,
-          hasControl: newControl,
-          currentRound: nextRound,
-          gamePhase: 'gameEnd',
-          winner: finalWinner,
-          koraBonus: bonus,
-          message: GarameLogic.getGameMessage({ 
-            gamePhase: 'gameEnd', 
-            winner: finalWinner, 
-            koraBonus: bonus 
-          }, null, 5),
-          score: {
-            ...prev.score,
-            [finalWinner]: prev.score[finalWinner] + bonus
-          },
-          currentTurn: null
-        };
-      }
-      
-      // Continuer le jeu
-      const nextTurn = roundWinner ? newControl : 'ia';
-      
-      return {
+      const newState = {
         ...prev,
         playerCards: newPlayerCards,
         playerTableCards: [...prev.playerTableCards, card],
         lastCard: card,
-        roundWins: newRoundWins,
-        currentRound: nextRound,
-        hasControl: newControl,
-        currentTurn: nextTurn,
-        message: `Tu joues ${card.value}${card.suit} - ${roundWinner ? `Tu ${roundWinner === 'player' ? 'prends' : 'perds'} la main` : 'IA doit répondre'}`
       };
-    });
-  };
 
-  // Gérer l'action de jouer une carte
-  const handleCardPlay = async (card) => {
-    if (gameMode === 'ai') {
-      playAiCard(card);
-    } else {
-      const result = await actions.playCard(card);
-      if (!result.success) {
-        addNotification('error', result.error);
+      // Si le joueur a la main, l'IA doit répondre
+      if (prev.main === 'player') {
+        newState.message = `Tu joues ${card.value}${card.suit} - IA doit répondre`;
+        newState.currentTurn = 'ia';
+      } else {
+        // Joueur répond à l'IA - résoudre le tour
+        newState.currentTurn = null;
+        newState.waitingForTurnResolution = true;
+        newState.message = `Tu joues ${card.value}${card.suit} - Résolution du tour...`;
+        
+        // Résoudre après un court délai
+        setTimeout(() => {
+          const iaCard = prev.opponentTableCards[prev.opponentTableCards.length - 1];
+          resolveTurn(card, iaCard, prev.main);
+        }, 1500);
       }
-    }
+
+      return newState;
+    });
   };
 
   // Gérer l'abandon
@@ -368,7 +443,12 @@ export default function GameRoom() {
     }
   };
 
-  // Affichage du loading
+  // Redémarrer une nouvelle partie
+  const handleNewGame = () => {
+    startNewGame();
+  };
+
+  // Affichage du loading pour multijoueur
   if (gameMode === 'multiplayer' && loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -380,7 +460,7 @@ export default function GameRoom() {
     );
   }
 
-  // Affichage de l'erreur
+  // Affichage de l'erreur pour multijoueur
   if (gameMode === 'multiplayer' && error) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -402,6 +482,21 @@ export default function GameRoom() {
   // Choisir l'état de jeu approprié
   const currentState = gameMode === 'ai' ? aiGameState : gameState;
   
+  // Générer le message d'aide pour le joueur en mode IA
+  const getPlayerMessage = () => {
+    if (gameMode !== 'ai') return currentState.message;
+    
+    if (aiThinking) return "🤖 IA réfléchit...";
+    if (currentState.waitingForTurnResolution) return currentState.message;
+    
+    if (currentState.gamePhase === 'playing' && currentState.currentTurn === 'player') {
+      const helpMessage = GarameLogic.getPlayerHelpMessage(currentState.playerCards, currentState.lastCard);
+      return helpMessage;
+    }
+    
+    return currentState.message;
+  };
+  
   // Adapter les données pour le GameBoard
   const boardData = gameMode === 'ai' ? {
     playerCards: currentState.playerCards,
@@ -409,16 +504,22 @@ export default function GameRoom() {
     tableCards: [],
     playerTableCards: currentState.playerTableCards || [],
     opponentTableCards: currentState.opponentTableCards || [],
-    message: aiThinking ? "🤖 IA réfléchit..." : currentState.message,
+    message: getPlayerMessage(),
     currentPlayer: currentState.currentTurn,
-    disabled: currentState.currentTurn !== 'player' || currentState.gamePhase !== 'playing' || aiThinking,
+    disabled: currentState.currentTurn !== 'player' || 
+              currentState.gamePhase !== 'playing' || 
+              aiThinking || 
+              currentState.waitingForTurnResolution,
     playerName: user?.pseudo || "Toi",
     opponentName: "IA",
-    playerScore: currentState.score?.player || 0,
-    opponentScore: currentState.score?.ia || 0,
-    playableCards: currentState.gamePhase === 'playing' && currentState.currentTurn === 'player' ? 
+    playerScore: currentState.scoreJoueur || 0,
+    opponentScore: currentState.scoreIA || 0,
+    playableCards: currentState.gamePhase === 'playing' && 
+                   currentState.currentTurn === 'player' && 
+                   !currentState.waitingForTurnResolution ? 
       GarameLogic.getPlayableCards(currentState.playerCards, currentState.lastCard) : []
   } : {
+    // Logic multijoueur inchangée
     playerCards: currentState.playerCards || [],
     opponentCards: Array(Object.values(currentState.other_players || {})[0]?.cards_count || 0).fill({}),
     tableCards: currentState.tableCards || [],
@@ -447,12 +548,19 @@ export default function GameRoom() {
 
       {/* Debug info pour développement */}
       {import.meta.env.DEV && gameMode === 'ai' && (
-        <div className="fixed top-20 right-4 bg-black bg-opacity-80 text-white p-2 rounded text-xs max-w-xs">
+        <div className="fixed top-20 right-4 bg-black bg-opacity-80 text-white p-2 rounded text-xs max-w-xs z-50">
           <div><strong>Debug IA:</strong></div>
+          <div>Manche: {currentState.mancheActuelle}</div>
+          <div>Score: {currentState.scoreJoueur}-{currentState.scoreIA}</div>
           <div>Tour: {currentState.currentRound}/5</div>
           <div>Turn: {currentState.currentTurn}</div>
-          <div>Control: {currentState.hasControl}</div>
-          <div>Rounds: [{currentState.roundWins?.join(', ')}]</div>
+          <div>Main: {currentState.main}</div>
+          <div>Phase: {currentState.gamePhase}</div>
+          <div>Waiting: {currentState.waitingForTurnResolution ? 'YES' : 'NO'}</div>
+          <div>Playable: {boardData.playableCards?.length || 0}</div>
+          {currentState.lastCard && (
+            <div>LastCard: {currentState.lastCard.value}{currentState.lastCard.suit}</div>
+          )}
           {aiThinking && <div className="text-yellow-400">🤖 IA réfléchit...</div>}
         </div>
       )}
@@ -479,13 +587,26 @@ export default function GameRoom() {
       {/* Board de jeu */}
       <GameBoard
         {...boardData}
-        onCardPlay={handleCardPlay}
+        onCardPlay={gameMode === 'ai' ? playAiCard : actions.playCard}
       />
+
+      {/* Indication des cartes jouables en mode IA */}
+      {gameMode === 'ai' && currentState.gamePhase === 'playing' && currentState.currentTurn === 'player' && !currentState.waitingForTurnResolution && (
+        <div className="fixed top-32 left-4 bg-blue-900/80 border border-blue-500 rounded-lg p-3 text-sm max-w-xs z-40">
+          <div className="font-bold text-blue-300 mb-1">💡 Aide:</div>
+          <div className="text-white">{GarameLogic.getPlayerHelpMessage(currentState.playerCards, currentState.lastCard)}</div>
+          {boardData.playableCards && boardData.playableCards.length > 0 && (
+            <div className="mt-2 text-green-300">
+              {boardData.playableCards.length} carte{boardData.playableCards.length > 1 ? 's' : ''} jouable{boardData.playableCards.length > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Gains potentiels */}
       <div className="game-reward reward-below-cards">
         {gameMode === 'ai' ? (
-          '🎁 Gain potentiel : Ta dignité'
+          '🎁 Gain potentiel : Ta dignité et progression'
         ) : (
           `🎁 Gain potentiel : ${new Intl.NumberFormat('fr-FR').format(
             Math.floor((currentState.room?.pot_amount || 0) * 0.9)
@@ -499,26 +620,38 @@ export default function GameRoom() {
           <>
             <div className="text-center mb-2">
               <div className="text-lg font-bold">
-                Tour {currentState.currentRound}/5 | {currentState.hasControl === 'player' ? '🧍 Tu as la main' : '🤖 IA a la main'}
+                Partie: Premier à {currentState.nombreManchesPourGagner} manches | 
+                Manche {currentState.mancheActuelle} - Tour {currentState.currentRound}/5
               </div>
-              {currentState.roundWins && currentState.roundWins.length > 0 && (
+              {currentState.roundsGagnés && currentState.roundsGagnés.length > 0 && (
                 <div className="text-sm text-gray-400">
-                  Tours gagnés: {currentState.roundWins.map((winner, i) => 
+                  Tours gagnés: {currentState.roundsGagnés.map((winner, i) => 
                     `${i + 1}:${winner === 'player' ? '🧍' : '🤖'}`
                   ).join(' | ')}
                 </div>
               )}
+              {currentState.main && !currentState.waitingForTurnResolution && (
+                <div className="text-sm text-blue-300">
+                  {currentState.main === 'player' ? '🧍 Tu as la main' : '🤖 IA a la main'}
+                </div>
+              )}
             </div>
-            Score : 🧍 {currentState.score.player} - 🤖 {currentState.score.ia}
+            <div className="text-center">
+              Score des manches : 🧍 {currentState.scoreJoueur} - 🤖 {currentState.scoreIA}
+            </div>
             {currentState.gamePhase === 'gameEnd' && (
-              <div className="mt-2 text-center">
-                <button onClick={startNewAiGame} className="btn btn-success">
-                  Nouvelle Partie
+              <div className="mt-4 text-center space-y-2">
+                <div className="text-lg font-bold">
+                  {currentState.winner === 'player' ? '🎉 Félicitations ! Tu as gagné !' : '😢 L\'IA a gagné cette fois.'}
+                </div>
+                <button onClick={handleNewGame} className="btn btn-success">
+                  🎮 Nouvelle Partie
                 </button>
               </div>
             )}
           </>
         ) : (
+          // Logic multijoueur inchangée
           <>
             {currentState.room && (
               <>
