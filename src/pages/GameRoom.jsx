@@ -229,6 +229,57 @@ export default function GameRoom() {
         });
 
         const aiCard = decision.card;
+        
+        // VÉRIFICATION DE SÉCURITÉ : L'IA respecte-t-elle les règles ?
+        const playableCards = GarameLogic.getPlayableCards(prev.iaCards, prev.lastCard);
+        const isValidMove = playableCards.some(pc => pc.value === aiCard.value && pc.suit === aiCard.suit);
+        
+        if (!isValidMove) {
+          console.error('🚨 IA TRICHE ! Carte non autorisée:', `${aiCard.value}${aiCard.suit}`);
+          console.log('Cartes jouables:', playableCards.map(c => `${c.value}${c.suit}`));
+          
+          // Forcer l'IA à jouer une carte valide
+          const fallbackCard = playableCards[0] || prev.iaCards[0];
+          console.log('🔧 Correction automatique:', `${fallbackCard.value}${fallbackCard.suit}`);
+          
+          const correctedDecision = {
+            card: fallbackCard,
+            reason: "Correction automatique - carte forcée"
+          };
+          
+          // Utiliser la carte corrigée
+          const newIaCards = prev.iaCards.filter(c => c !== fallbackCard);
+          
+          console.log(`🤖 IA joue (corrigé): ${fallbackCard.value}${fallbackCard.suit} - ${correctedDecision.reason}`);
+          playSound('carte_posée');
+
+          const newState = {
+            ...prev,
+            iaCards: newIaCards,
+            opponentTableCards: [...prev.opponentTableCards, fallbackCard],
+            lastCard: fallbackCard,
+          };
+
+          // Si l'IA a la main, le joueur doit répondre
+          if (prev.main === 'ia') {
+            newState.message = `IA joue ${fallbackCard.value}${fallbackCard.suit} - À toi de répondre`;
+            newState.currentTurn = 'player';
+          } else {
+            // IA répond au joueur - résoudre le tour
+            newState.currentTurn = null;
+            newState.waitingForTurnResolution = true;
+            newState.message = `IA joue ${fallbackCard.value}${fallbackCard.suit} - Résolution du tour...`;
+            
+            // Résoudre après un court délai
+            setTimeout(() => {
+              const playerCard = prev.playerTableCards[prev.playerTableCards.length - 1];
+              resolveTurn(playerCard, fallbackCard, prev.main);
+            }, 1500);
+          }
+
+          return newState;
+        }
+        
         const newIaCards = prev.iaCards.filter(c => c !== aiCard);
         
         console.log(`🤖 IA joue: ${aiCard.value}${aiCard.suit} - ${decision.reason}`);

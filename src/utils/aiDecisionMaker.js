@@ -7,9 +7,7 @@ export class AIDecisionMaker {
 
   /**
    * Prendre une décision intelligente sur quelle carte jouer
-   * @param {Array} aiCards - Cartes de l'IA
-   * @param {Object} gameState - État complet du jeu
-   * @returns {Object} - Carte choisie et raison
+   * EN RESPECTANT OBLIGATOIREMENT LES RÈGLES
    */
   makeDecision(aiCards, gameState) {
     const {
@@ -22,114 +20,275 @@ export class AIDecisionMaker {
       opponentTableCards,
     } = gameState;
 
+    // RÈGLE ABSOLUE : Vérifier d'abord les contraintes de jeu
+    const playableCards = GarameLogic.getPlayableCards(aiCards, lastCard);
+
+    if (playableCards.length === 0) {
+      console.error("🚨 IA: Aucune carte jouable détectée !");
+      return {
+        card: aiCards[0],
+        reason: "Erreur - aucune carte jouable",
+      };
+    }
+
+    console.log(`🤖 IA Analysis:`, {
+      aiCardsCount: aiCards.length,
+      playableCount: playableCards.length,
+      lastCard: lastCard ? `${lastCard.value}${lastCard.suit}` : "none",
+      hasControl: hasControl,
+    });
+
     // Analyser la situation
     const situation = this.analyzeSituation(aiCards, gameState);
 
     // Choisir la stratégie appropriée
     const strategy = this.chooseStrategy(situation, gameState);
 
-    // Sélectionner la carte selon la stratégie
-    const decision = this.selectCard(aiCards, lastCard, strategy, situation);
+    // Sélectionner la carte EN RESPECTANT LES RÈGLES
+    const decision = this.selectCardWithRules(
+      aiCards,
+      lastCard,
+      strategy,
+      situation
+    );
 
-    console.log(`🤖 IA Decision:`, {
+    // VÉRIFICATION FINALE : La carte choisie est-elle valide ?
+    const isValid = playableCards.some(
+      (pc) => pc.value === decision.card.value && pc.suit === decision.card.suit
+    );
+
+    if (!isValid) {
+      console.error("🚨 ERREUR IA: Carte choisie non valide !", decision.card);
+      console.log(
+        "Cartes jouables:",
+        playableCards.map((c) => `${c.value}${c.suit}`)
+      );
+
+      // Fallback de sécurité
+      return {
+        card: playableCards[0],
+        reason: "Fallback de sécurité - première carte jouable",
+      };
+    }
+
+    console.log(`🤖 IA Decision finale:`, {
       round: currentRound,
       strategy: strategy.name,
-      card: decision.card,
+      card: `${decision.card.value}${decision.card.suit}`,
       reason: decision.reason,
-      situation: situation.summary,
+      isValid: true,
     });
 
     return decision;
   }
 
   /**
-   * Analyser la situation actuelle
+   * Sélectionner une carte en respectant OBLIGATOIREMENT les règles
    */
-  analyzeSituation(aiCards, gameState) {
-    const { lastCard, currentRound, roundWins, hasControl, playerCards } =
-      gameState;
+  selectCardWithRules(aiCards, lastCard, strategy, situation) {
+    // Obtenir les cartes réellement jouables selon les règles
+    const playableCards = GarameLogic.getPlayableCards(aiCards, lastCard);
 
-    // Analyse des cartes
-    const cardSum = GarameLogic.calculateCardSum(aiCards);
-    const playerCardSum = GarameLogic.calculateCardSum(playerCards);
-    const highCards = aiCards.filter((c) => c.value >= 8);
-    const lowCards = aiCards.filter((c) => c.value <= 5);
-    const threes = aiCards.filter((c) => c.value === 3);
-
-    // Analyse des familles
-    const families = this.analyzeFamilies(aiCards);
-    const strongFamilies = Object.keys(families).filter(
-      (suit) => families[suit].length >= 2
-    );
-
-    // Analyse de la position dans la partie
-    const turnsRemaining = 5 - currentRound;
-    const needsToWin = this.needsToWinRemainingTurns(roundWins, currentRound);
-    const canAffordToLose = turnsRemaining > needsToWin;
-
-    // Analyse de la carte adverse si elle existe
-    const opponentThreat = this.analyzeOpponentThreat(lastCard, aiCards);
-
-    return {
-      cardSum,
-      playerCardSum,
-      highCards: highCards.length,
-      lowCards: lowCards.length,
-      threes: threes.length,
-      strongFamilies,
-      families,
-      turnsRemaining,
-      needsToWin,
-      canAffordToLose,
-      opponentThreat,
-      hasControl,
-      isLastTurn: currentRound === 5,
-      summary: `T${currentRound}/5, ${
-        hasControl ? "HAS_CONTROL" : "RESPONDING"
-      }, Sum:${cardSum}, Threat:${opponentThreat.level}`,
-    };
-  }
-
-  /**
-   * Analyser les familles de cartes
-   */
-  analyzeFamilies(cards) {
-    const families = { "♠": [], "♥": [], "♣": [], "♦": [] };
-
-    cards.forEach((card) => {
-      families[card.suit].push(card);
-    });
-
-    // Trier chaque famille par valeur
-    Object.keys(families).forEach((suit) => {
-      families[suit].sort((a, b) => a.value - b.value);
-    });
-
-    return families;
-  }
-
-  /**
-   * Analyser la menace de la carte adverse
-   */
-  analyzeOpponentThreat(lastCard, aiCards) {
-    if (!lastCard) {
-      return { level: "none", canCounter: true, counterCards: aiCards };
+    if (playableCards.length === 0) {
+      return {
+        card: aiCards[0],
+        reason: "Erreur - pas de cartes jouables",
+      };
     }
 
-    const sameFamily = aiCards.filter((c) => c.suit === lastCard.suit);
-    const higherCards = sameFamily.filter((c) => c.value > lastCard.value);
+    if (playableCards.length === 1) {
+      return {
+        card: playableCards[0],
+        reason: "Seule carte autorisée par les règles",
+      };
+    }
 
-    let level = "low";
-    if (lastCard.value >= 9) level = "high";
-    else if (lastCard.value >= 7) level = "medium";
+    // Si premier à jouer (pas de contrainte)
+    if (!lastCard) {
+      return this.selectForFirstPlay(aiCards, strategy, situation);
+    }
+
+    // Vérifier l'obligation de famille
+    const sameFamily = aiCards.filter((c) => c.suit === lastCard.suit);
+
+    if (sameFamily.length > 0) {
+      // OBLIGATION : Doit jouer de la même famille
+      console.log(
+        `🤖 OBLIGATION: Doit jouer du ${lastCard.suit} (${sameFamily.length} cartes)`
+      );
+      return this.selectFromSameFamily(
+        sameFamily,
+        lastCard,
+        strategy,
+        situation
+      );
+    } else {
+      // LIBERTÉ : Peut jouer n'importe quelle carte
+      console.log(`🤖 LIBERTÉ: Pas de ${lastCard.suit} - choix libre`);
+      return this.selectFromAllCards(aiCards, strategy, situation);
+    }
+  }
+
+  /**
+   * Sélection pour le premier coup (liberté totale)
+   */
+  selectForFirstPlay(aiCards, strategy, situation) {
+    const { isLastTurn, threes } = situation;
+
+    // Tentative de Kora au dernier tour
+    if (isLastTurn && threes > 0) {
+      const koraCard = aiCards.find((c) => c.value === 3);
+      if (koraCard) {
+        return {
+          card: koraCard,
+          reason: "Tentative de KORA avec un 3",
+        };
+      }
+    }
+
+    // Stratégie normale d'ouverture
+    const sortedCards = [...aiCards].sort((a, b) => b.value - a.value);
+
+    switch (strategy.name) {
+      case "AGGRESSIVE_COUNTER":
+      case "FIGHT_FOR_CONTROL":
+        return {
+          card: sortedCards[0],
+          reason: "Ouverture agressive",
+        };
+
+      case "STRATEGIC_PLAY":
+      case "MAINTAIN_CONTROL":
+        // Jouer une carte moyenne-forte (pas la plus forte)
+        const cardIndex = Math.min(1, sortedCards.length - 1);
+        return {
+          card: sortedCards[cardIndex],
+          reason: "Ouverture stratégique",
+        };
+
+      default:
+        // Ouverture conservatrice
+        const midIndex = Math.floor(sortedCards.length / 2);
+        return {
+          card: sortedCards[midIndex],
+          reason: "Ouverture équilibrée",
+        };
+    }
+  }
+
+  /**
+   * Sélection parmi les cartes de la même famille (obligation)
+   */
+  selectFromSameFamily(sameFamily, lastCard, strategy, situation) {
+    const higherCards = sameFamily.filter((c) => c.value > lastCard.value);
+    const { isLastTurn, needsToWin } = situation;
+
+    if (higherCards.length > 0) {
+      // Peut prendre la main
+      if (isLastTurn || needsToWin <= 1) {
+        // Situation critique - jouer la plus forte
+        const strongest = higherCards.reduce((max, card) =>
+          card.value > max.value ? card : max
+        );
+        return {
+          card: strongest,
+          reason: `OBLIGATION ${lastCard.suit} - Prendre avec la plus forte ${strongest.value}${strongest.suit}`,
+        };
+      } else {
+        // Situation normale - jouer la plus petite qui peut prendre
+        const smallest = higherCards.reduce((min, card) =>
+          card.value < min.value ? card : min
+        );
+        return {
+          card: smallest,
+          reason: `OBLIGATION ${lastCard.suit} - Prendre avec ${smallest.value}${smallest.suit}`,
+        };
+      }
+    } else {
+      // Sacrifice obligatoire
+      const sacrifice = sameFamily.reduce((min, card) =>
+        card.value < min.value ? card : min
+      );
+      return {
+        card: sacrifice,
+        reason: `OBLIGATION ${lastCard.suit} - Sacrifice ${sacrifice.value}${sacrifice.suit}`,
+      };
+    }
+  }
+
+  /**
+   * Sélection libre (pas de contrainte de famille)
+   */
+  selectFromAllCards(aiCards, strategy, situation) {
+    const { isLastTurn, threes, needsToWin } = situation;
+
+    // Tentative de Kora au dernier tour
+    if (isLastTurn && threes > 0) {
+      const koraCard = aiCards.find((c) => c.value === 3);
+      if (koraCard) {
+        return {
+          card: koraCard,
+          reason: "LIBERTÉ - Tentative de KORA",
+        };
+      }
+    }
+
+    // Généralement jouer la plus petite carte
+    const smallest = aiCards.reduce((min, card) =>
+      card.value < min.value ? card : min
+    );
 
     return {
-      level,
-      canCounter: higherCards.length > 0,
-      counterCards: higherCards,
-      mustPlay: sameFamily.length > 0,
-      sacrificeCards: sameFamily.filter((c) => c.value <= lastCard.value),
+      card: smallest,
+      reason: `LIBERTÉ - Défausse ${smallest.value}${smallest.suit}`,
     };
+  }
+
+  /**
+   * Analyser la situation actuelle (simplifié)
+   */
+  analyzeSituation(aiCards, gameState) {
+    const { currentRound, roundWins, hasControl } = gameState;
+
+    const threes = aiCards.filter((c) => c.value === 3).length;
+    const turnsRemaining = 5 - currentRound;
+    const isLastTurn = currentRound === 5;
+    const needsToWin = this.needsToWinRemainingTurns(roundWins, currentRound);
+
+    return {
+      threes,
+      turnsRemaining,
+      isLastTurn,
+      needsToWin,
+      hasControl,
+      summary: `T${currentRound}/5, ${
+        hasControl ? "HAS_CONTROL" : "RESPONDING"
+      }, Threes:${threes}`,
+    };
+  }
+
+  /**
+   * Choisir la stratégie appropriée (simplifié)
+   */
+  chooseStrategy(situation, gameState) {
+    const { isLastTurn, hasControl, needsToWin, threes } = situation;
+
+    if (isLastTurn) {
+      if (hasControl && threes > 0) {
+        return { name: "KORA_ATTEMPT", priority: "highest" };
+      }
+      return { name: "SECURE_WIN", priority: "highest" };
+    }
+
+    if (needsToWin <= 1) {
+      return { name: "AGGRESSIVE_COUNTER", priority: "high" };
+    }
+
+    if (hasControl) {
+      return { name: "MAINTAIN_CONTROL", priority: "medium" };
+    }
+
+    return { name: "STRATEGIC_PLAY", priority: "medium" };
   }
 
   /**
@@ -137,293 +296,11 @@ export class AIDecisionMaker {
    */
   needsToWinRemainingTurns(roundWins, currentRound) {
     const aiWins = roundWins.filter((winner) => winner === "ia").length;
-    const playerWins = roundWins.filter((winner) => winner === "player").length;
 
-    // Dans le Garame, il faut avoir la main au dernier tour
-    // Donc l'IA doit s'assurer d'être en position de force
     if (currentRound === 5) return 1; // Doit gagner le dernier tour
     if (currentRound === 4) return 2; // Doit contrôler les 2 derniers tours
 
     return Math.max(1, 3 - aiWins); // Stratégie générale
-  }
-
-  /**
-   * Choisir la stratégie appropriée
-   */
-  chooseStrategy(situation, gameState) {
-    const {
-      isLastTurn,
-      hasControl,
-      needsToWin,
-      canAffordToLose,
-      threes,
-      opponentThreat,
-    } = situation;
-
-    // Stratégie tour final - CRITIQUE
-    if (isLastTurn) {
-      if (hasControl) {
-        return threes > 0
-          ? { name: "KORA_ATTEMPT", priority: "highest" }
-          : { name: "SECURE_WIN", priority: "highest" };
-      } else {
-        return opponentThreat.canCounter
-          ? { name: "FIGHT_FOR_CONTROL", priority: "highest" }
-          : { name: "MINIMIZE_LOSS", priority: "high" };
-      }
-    }
-
-    // Stratégies en cours de partie
-    if (hasControl) {
-      if (!canAffordToLose) {
-        return { name: "MAINTAIN_CONTROL", priority: "high" };
-      } else {
-        return { name: "STRATEGIC_PLAY", priority: "medium" };
-      }
-    } else {
-      if (opponentThreat.canCounter && needsToWin <= 2) {
-        return { name: "AGGRESSIVE_COUNTER", priority: "high" };
-      } else if (opponentThreat.mustPlay) {
-        return { name: "SMART_SACRIFICE", priority: "medium" };
-      } else {
-        return { name: "FLEXIBLE_RESPONSE", priority: "medium" };
-      }
-    }
-  }
-
-  /**
-   * Sélectionner la carte selon la stratégie
-   */
-  selectCard(aiCards, lastCard, strategy, situation) {
-    switch (strategy.name) {
-      case "KORA_ATTEMPT":
-        return this.selectForKora(aiCards, situation);
-
-      case "SECURE_WIN":
-        return this.selectForSecureWin(aiCards, lastCard, situation);
-
-      case "FIGHT_FOR_CONTROL":
-        return this.selectForFightControl(aiCards, lastCard, situation);
-
-      case "MAINTAIN_CONTROL":
-        return this.selectForMaintainControl(aiCards, situation);
-
-      case "STRATEGIC_PLAY":
-        return this.selectForStrategicPlay(aiCards, situation);
-
-      case "AGGRESSIVE_COUNTER":
-        return this.selectForAggressiveCounter(aiCards, lastCard, situation);
-
-      case "SMART_SACRIFICE":
-        return this.selectForSmartSacrifice(aiCards, lastCard, situation);
-
-      case "MINIMIZE_LOSS":
-      case "FLEXIBLE_RESPONSE":
-      default:
-        return this.selectForFlexibleResponse(aiCards, lastCard, situation);
-    }
-  }
-
-  /**
-   * Stratégies spécifiques de sélection de cartes
-   */
-  selectForKora(aiCards, situation) {
-    const threes = aiCards.filter((c) => c.value === 3);
-    if (threes.length > 0) {
-      return {
-        card: threes[0],
-        reason: "Tentative de KORA avec un 3 au tour final",
-      };
-    }
-
-    // Fallback : jouer la plus forte carte
-    const strongest = aiCards.reduce((max, card) =>
-      card.value > max.value ? card : max
-    );
-    return {
-      card: strongest,
-      reason: "Jouer la plus forte carte pour sécuriser la victoire",
-    };
-  }
-
-  selectForSecureWin(aiCards, lastCard, situation) {
-    if (!lastCard) {
-      // Premier à jouer : jouer une carte forte mais pas la plus forte
-      const sortedCards = [...aiCards].sort((a, b) => b.value - a.value);
-      const cardToPlay = sortedCards[1] || sortedCards[0];
-      return {
-        card: cardToPlay,
-        reason: "Sécuriser la victoire avec une carte forte",
-      };
-    }
-
-    return this.selectForFlexibleResponse(aiCards, lastCard, situation);
-  }
-
-  selectForFightControl(aiCards, lastCard, situation) {
-    const { counterCards } = situation.opponentThreat;
-
-    if (counterCards.length > 0) {
-      // Jouer la plus petite carte qui peut prendre
-      const bestCounter = counterCards.reduce((min, card) =>
-        card.value < min.value ? card : min
-      );
-      return {
-        card: bestCounter,
-        reason: `Contre-attaque avec ${bestCounter.value}${bestCounter.suit} pour reprendre le contrôle`,
-      };
-    }
-
-    return this.selectForSmartSacrifice(aiCards, lastCard, situation);
-  }
-
-  selectForMaintainControl(aiCards, situation) {
-    // Jouer une carte qui oblige l'adversaire à jouer fort mais pas notre meilleure
-    const { strongFamilies, families } = situation;
-
-    // Éviter de jouer nos cartes les plus fortes en début de partie
-    if (situation.turnsRemaining > 2) {
-      const midRangeCards = aiCards.filter((c) => c.value >= 5 && c.value <= 7);
-      if (midRangeCards.length > 0) {
-        const cardToPlay =
-          midRangeCards[Math.floor(Math.random() * midRangeCards.length)];
-        return {
-          card: cardToPlay,
-          reason: `Contrôle avec carte moyenne ${cardToPlay.value}${cardToPlay.suit}`,
-        };
-      }
-    }
-
-    if (strongFamilies.length > 0) {
-      // Jouer une carte d'une famille forte mais pas la plus forte
-      const strongFamily = families[strongFamilies[0]];
-      const cardIndex = Math.min(1, strongFamily.length - 1);
-      const cardToPlay = strongFamily[cardIndex];
-      return {
-        card: cardToPlay,
-        reason: `Maintenir le contrôle avec ${cardToPlay.value}${cardToPlay.suit} de famille forte`,
-      };
-    }
-
-    // Jouer une carte moyenne
-    const sortedCards = [...aiCards].sort((a, b) => a.value - b.value);
-    const midIndex = Math.floor(sortedCards.length / 2);
-    return {
-      card: sortedCards[midIndex],
-      reason: "Maintenir le contrôle avec carte moyenne",
-    };
-  }
-
-  selectForStrategicPlay(aiCards, situation) {
-    // Jouer de manière à garder les bonnes cartes pour plus tard
-    const lowCards = aiCards.filter((c) => c.value <= 6);
-
-    if (lowCards.length > 0) {
-      const cardToPlay = lowCards.reduce((min, card) =>
-        card.value < min.value ? card : min
-      );
-      return {
-        card: cardToPlay,
-        reason: `Jeu stratégique - garder les fortes cartes pour plus tard`,
-      };
-    }
-
-    return this.selectForFlexibleResponse(aiCards, null, situation);
-  }
-
-  selectForAggressiveCounter(aiCards, lastCard, situation) {
-    const { counterCards } = situation.opponentThreat;
-
-    if (counterCards.length > 0) {
-      // Jouer la plus forte carte qui peut prendre
-      const strongestCounter = counterCards.reduce((max, card) =>
-        card.value > max.value ? card : max
-      );
-      return {
-        card: strongestCounter,
-        reason: `Contre-attaque agressive avec ${strongestCounter.value}${strongestCounter.suit}`,
-      };
-    }
-
-    return this.selectForSmartSacrifice(aiCards, lastCard, situation);
-  }
-
-  selectForSmartSacrifice(aiCards, lastCard, situation) {
-    const { sacrificeCards, mustPlay } = situation.opponentThreat;
-
-    if (mustPlay && sacrificeCards.length > 0) {
-      // Sacrifier la plus petite carte de la famille
-      const sacrifice = sacrificeCards.reduce((min, card) =>
-        card.value < min.value ? card : min
-      );
-      return {
-        card: sacrifice,
-        reason: `Sacrifice intelligent de ${sacrifice.value}${sacrifice.suit}`,
-      };
-    }
-
-    return this.selectForFlexibleResponse(aiCards, lastCard, situation);
-  }
-
-  selectForFlexibleResponse(aiCards, lastCard, situation) {
-    // Réponse par défaut intelligente
-    if (!lastCard) {
-      // Premier à jouer : jouer une carte moyenne-forte
-      const sortedCards = [...aiCards].sort((a, b) => b.value - a.value);
-      const cardIndex = Math.min(1, sortedCards.length - 1);
-      return {
-        card: sortedCards[cardIndex],
-        reason: "Ouverture avec carte moyenne-forte",
-      };
-    }
-
-    // Logique de réponse standard
-    const playableCards = GarameLogic.getPlayableCards(aiCards, lastCard);
-
-    if (playableCards.length === 0) {
-      // Aucune carte jouable - jouer la plus petite
-      const smallest = aiCards.reduce((min, card) =>
-        card.value < min.value ? card : min
-      );
-      return {
-        card: smallest,
-        reason: "Aucune carte jouable - défausse la plus petite",
-      };
-    }
-
-    // Cartes jouables disponibles
-    if (playableCards.length === 1) {
-      return {
-        card: playableCards[0],
-        reason: "Seule carte jouable disponible",
-      };
-    }
-
-    // Choisir intelligemment parmi les cartes jouables
-    const bestCard = this.chooseBestPlayableCard(playableCards, situation);
-    return {
-      card: bestCard,
-      reason: `Meilleur choix parmi ${playableCards.length} cartes jouables`,
-    };
-  }
-
-  /**
-   * Choisir la meilleure carte parmi celles jouables
-   */
-  chooseBestPlayableCard(playableCards, situation) {
-    const { turnsRemaining, canAffordToLose } = situation;
-
-    // Tri par valeur
-    const sortedPlayable = [...playableCards].sort((a, b) => a.value - b.value);
-
-    if (canAffordToLose && turnsRemaining > 2) {
-      // Jouer conservateur - plus petite carte jouable
-      return sortedPlayable[0];
-    } else {
-      // Jouer plus agressif - carte moyenne ou forte
-      const midIndex = Math.floor(sortedPlayable.length / 2);
-      return sortedPlayable[midIndex];
-    }
   }
 }
 

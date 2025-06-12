@@ -94,7 +94,7 @@ export function whoTakesControl(card1, card2, whoPlayedFirst) {
   return whoPlayedFirst;
 }
 
-// IA choisit une carte selon les règles - LOGIQUE CORRIGÉE
+// IA choisit une carte selon les règles - LOGIQUE CORRIGÉE avec obligation stricte
 export function aiChooseCard(aiCards, lastCard) {
   if (!lastCard) {
     // Premier coup : jouer une carte moyenne-forte (pas la plus forte)
@@ -102,27 +102,45 @@ export function aiChooseCard(aiCards, lastCard) {
     return sortedCards[1] || sortedCards[0];
   }
 
+  // RÈGLE STRICTE : Vérifier l'obligation de jouer la même famille
   const sameFamily = aiCards.filter((c) => c.suit === lastCard.suit);
 
   if (sameFamily.length > 0) {
-    // Cartes de la même famille disponibles - on DOIT jouer de la même famille
+    // L'IA DOIT jouer de la même famille - obligation absolue !
+    console.log(
+      `🤖 OBLIGATION: IA doit jouer du ${lastCard.suit} (${sameFamily.length} cartes disponibles)`
+    );
+
     const higher = sameFamily.filter((c) => c.value > lastCard.value);
 
     if (higher.length > 0) {
       // On peut prendre la main - jouer la plus petite carte qui peut prendre
-      return higher.reduce((min, card) =>
+      const bestCard = higher.reduce((min, card) =>
         card.value < min.value ? card : min
       );
+      console.log(`🤖 IA prend avec ${bestCard.value}${bestCard.suit}`);
+      return bestCard;
     } else {
-      // Pas de carte supérieure - jouer la plus petite de la famille (sacrifice)
-      return sameFamily.reduce((min, card) =>
+      // Pas de carte supérieure - sacrifier la plus petite de la famille
+      const sacrifice = sameFamily.reduce((min, card) =>
         card.value < min.value ? card : min
       );
+      console.log(
+        `🤖 IA sacrifice ${sacrifice.value}${sacrifice.suit} (obligation)`
+      );
+      return sacrifice;
     }
   }
 
-  // Pas de cartes de la même famille - jouer la plus petite carte possible
-  return aiCards.reduce((min, card) => (card.value < min.value ? card : min));
+  // Pas de cartes de la même famille - liberté totale
+  console.log(
+    `🤖 LIBERTÉ: IA n'a pas de ${lastCard.suit} - peut jouer n'importe quelle carte`
+  );
+  const smallest = aiCards.reduce((min, card) =>
+    card.value < min.value ? card : min
+  );
+  console.log(`🤖 IA défausse ${smallest.value}${smallest.suit}`);
+  return smallest;
 }
 
 // Vérifier les bonus (kora)
@@ -236,9 +254,9 @@ export function getPlayerHelpMessage(playerCards, lastCard) {
     const canTakeControl = playableCards.some((c) => c.value > lastCard.value);
 
     if (canTakeControl) {
-      return `Tu DOIS jouer du ${mustPlayFamily} - Joue plus fort que ${lastCard.value} pour prendre la main`;
+      return `Tu dois jouer du ${mustPlayFamily} - Joue plus fort que ${lastCard.value} pour prendre la main`;
     } else {
-      return `Tu DOIS jouer du ${mustPlayFamily} - Sacrifice ta plus petite carte (obligation)`;
+      return `Tu dois jouer du ${mustPlayFamily} - Sacrifice ta plus petite carte (obligation)`;
     }
   } else {
     return "Tu n'as pas la famille demandée - Tu peux jouer n'importe quelle carte";

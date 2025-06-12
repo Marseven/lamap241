@@ -53,8 +53,8 @@ export default function AuthPage() {
         newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
       }
       
-      if (formData.phone && !/^(\+241|241)?[0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) {
-        newErrors.phone = 'Numéro de téléphone invalide (format: +241 XX XX XX XX)';
+      if (formData.phone && !/^(074|077|076|062|065|066|060)[0-9]{6}$/.test(formData.phone.replace(/\s/g, ''))) {
+        newErrors.phone = 'Numéro de téléphone invalide (format:  XX XX XX XX)';
       }
       
       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -139,14 +139,35 @@ export default function AuthPage() {
         <form onSubmit={handleSubmit} className="auth-form">
           {errors.general && (
             <div className="error-message general">
-              ⚠️ {errors.general}
+              {errors.general}
+            </div>
+          )}
+
+          {/* Name (inscription seulement) */}
+          {activeTab === 'register' && (
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">
+                Nom Complet
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`form-input ${errors.name ? 'error' : ''}`}
+                placeholder="John Doe"
+                disabled={loading}
+              />
+              {errors.name && (
+                <div className="error-message">{errors.email}</div>
+              )}
             </div>
           )}
 
           {/* Pseudo */}
           <div className="form-group">
             <label htmlFor="pseudo" className="form-label">
-              <span className="label-icon">👤</span>
               Pseudo
             </label>
             <input
@@ -168,8 +189,8 @@ export default function AuthPage() {
           {activeTab === 'register' && (
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                <span className="label-icon">📧</span>
-                Email (optionnel)
+                
+                Email
               </label>
               <input
                 type="email"
@@ -191,7 +212,7 @@ export default function AuthPage() {
           {activeTab === 'register' && (
             <div className="form-group">
               <label htmlFor="phone" className="form-label">
-                <span className="label-icon">📱</span>
+                
                 Téléphone
               </label>
               <input
@@ -201,7 +222,7 @@ export default function AuthPage() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 className={`form-input ${errors.phone ? 'error' : ''}`}
-                placeholder="+241 XX XX XX XX"
+                placeholder="074XXXXXX"
                 disabled={loading}
               />
               {errors.phone && (
@@ -213,7 +234,7 @@ export default function AuthPage() {
           {/* Mot de passe */}
           <div className="form-group">
             <label htmlFor="password" className="form-label">
-              <span className="label-icon">🔒</span>
+              
               Mot de passe
             </label>
             <input
@@ -235,7 +256,7 @@ export default function AuthPage() {
           {activeTab === 'register' && (
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">
-                <span className="label-icon">🔒</span>
+                
                 Confirmer le mot de passe
               </label>
               <input
