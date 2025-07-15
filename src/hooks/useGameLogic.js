@@ -31,6 +31,23 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
       setLoading(true);
       setError(null);
 
+      // D'abord vérifier si la salle existe et son statut
+      const roomInfo = await api.getRoom(gameId);
+      
+      // Si la salle est en attente, ne pas essayer de récupérer l'état du jeu
+      if (roomInfo.status === 'waiting') {
+        setGameState((prev) => ({
+          ...prev,
+          status: "waiting",
+          gamePhase: "waiting",
+          message: "En attente d'autres joueurs...",
+          roomInfo: roomInfo,
+        }));
+        setError(null);
+        return;
+      }
+
+      // Si la salle est prête, essayer de récupérer l'état du jeu
       const state = await api.getGameState(gameId);
 
       setGameState((prevState) => ({
@@ -49,7 +66,7 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
       
       // Vérifier si c'est une erreur de "pas de jeu en cours"
       if (error.message === "Aucun jeu en cours dans cette salle") {
-        // Vérifier le statut de la salle
+        // Essayer de récupérer les infos de la salle
         try {
           const roomInfo = await api.getRoom(gameId);
           if (roomInfo.status === 'waiting') {
@@ -97,7 +114,7 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
 
   // Polling pour les mises à jour temps réel
   useEffect(() => {
-    if (!gameId || gameState.status === "completed") return;
+    if (!gameId || gameState.status === "completed" || gameState.gamePhase === "waiting") return;
 
     const pollInterval = setInterval(async () => {
       try {
@@ -144,7 +161,45 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
     }, 2000); // Poll toutes les 2 secondes
 
     return () => clearInterval(pollInterval);
-  }, [gameId, gameState.status, user.id]);
+  }, [gameId, gameState.status, gameState.gamePhase, user.id]);
+
+  // Polling spécifique pour la salle d'attente
+  useEffect(() => {
+    if (!gameId || gameState.gamePhase !== "waiting") return;
+
+    const waitingPollInterval = setInterval(async () => {
+      try {
+        // Essayer de récupérer l'état du jeu pour voir si la partie a commencé
+        const state = await api.getGameState(gameId);
+        
+        // Si on arrive ici, c'est que la partie a commencé
+        setGameState((prevState) => ({
+          ...prevState,
+          ...state,
+          gamePhase: "playing",
+          message: getGameMessage(state, user.id),
+        }));
+      } catch (error) {
+        // Si l'erreur persiste, vérifier le statut de la salle
+        if (error.message === "Aucun jeu en cours dans cette salle") {
+          try {
+            const roomInfo = await api.getRoom(gameId);
+            setGameState((prev) => ({
+              ...prev,
+              roomInfo: roomInfo,
+              message: roomInfo.status === 'waiting' ? 
+                "En attente d'autres joueurs..." : 
+                "Préparation de la partie...",
+            }));
+          } catch (roomError) {
+            console.error("Erreur lors de la vérification de la salle:", roomError);
+          }
+        }
+      }
+    }, 3000); // Poll toutes les 3 secondes pour l'attente
+
+    return () => clearInterval(waitingPollInterval);
+  }, [gameId, gameState.gamePhase, user.id]);
 
   // Générer le message de jeu approprié
   const getGameMessage = (state, userId) => {
