@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGameLogic } from '../hooks/useGameLogic';
+import { useGameWebSocket } from '../hooks/useWebSocket';
 import GameBoard from '../components/GameBoard';
 import GameHeader from '../components/GameHeader';
 import PlayerInfo from '../components/PlayerInfo';
@@ -24,6 +25,55 @@ export default function GameRoom() {
     gameMode === 'ai' ? null : gameId, 
     gameMode
   );
+
+  // WebSocket pour les parties multijoueurs
+  const gameChannel = useGameWebSocket(gameMode === 'multiplayer' ? gameId : null, {
+    onCardPlayed: (event) => {
+      console.log('🃏 Carte jouée par l\'adversaire:', event);
+      addNotification({
+        type: 'info',
+        message: `${event.player.pseudo} a joué une carte`,
+        duration: 3000
+      });
+      // Actualiser l'état du jeu
+      if (actions.refreshGameState) {
+        actions.refreshGameState();
+      }
+    },
+    onPlayerPassed: (event) => {
+      console.log('⏭️ Joueur a passé:', event);
+      addNotification({
+        type: 'info',
+        message: `${event.player.pseudo} a passé son tour`,
+        duration: 3000
+      });
+      // Actualiser l'état du jeu
+      if (actions.refreshGameState) {
+        actions.refreshGameState();
+      }
+    },
+    onGameStateChanged: (event) => {
+      console.log('🔄 État du jeu changé:', event);
+      // Actualiser l'état du jeu
+      if (actions.refreshGameState) {
+        actions.refreshGameState();
+      }
+    },
+    onPlayerJoining: (user) => {
+      addNotification({
+        type: 'success',
+        message: `${user.pseudo} a rejoint la partie`,
+        duration: 3000
+      });
+    },
+    onPlayerLeaving: (user) => {
+      addNotification({
+        type: 'warning',
+        message: `${user.pseudo} a quitté la partie`,
+        duration: 3000
+      });
+    }
+  });
 
   // IA intelligente
   const [aiDecisionMaker] = useState(() => new AIDecisionMaker());

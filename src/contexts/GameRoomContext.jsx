@@ -52,9 +52,9 @@ export const GameRoomProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      // Validation côté client
-      if (roomData.bet < 500) throw new Error('Mise minimum : 500 FCFA');
-      if (roomData.bet > user.balance) throw new Error('Solde insuffisant');
+      // Validation côté client (seulement pour les parties non-exhibition)
+      if (!roomData.isExhibition && roomData.bet < 500) throw new Error('Mise minimum : 500 FCFA');
+      if (!roomData.isExhibition && roomData.bet > user.balance) throw new Error('Solde insuffisant');
       if (!roomData.name || roomData.name.trim().length < 3) {
         throw new Error('Nom de partie trop court (minimum 3 caractères)');
       }
