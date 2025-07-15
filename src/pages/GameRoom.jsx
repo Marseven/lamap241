@@ -6,6 +6,7 @@ import { useGameWebSocket } from '../hooks/useWebSocket';
 import GameBoard from '../components/GameBoard';
 import GameHeader from '../components/GameHeader';
 import PlayerInfo from '../components/PlayerInfo';
+import WaitingRoom from '../components/WaitingRoom';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationToast from '../components/NotificationToast';
 import * as GarameLogic from '../utils/garameLogic';
@@ -579,6 +580,11 @@ export default function GameRoom() {
         </div>
       </div>
     );
+  }
+
+  // Affichage de la page d'attente pour multijoueur
+  if (gameMode === 'multiplayer' && gameState.gamePhase === 'waiting') {
+    return <WaitingRoom roomInfo={gameState.roomInfo} gameId={gameId} />;
   }
 
   // Affichage de l'erreur pour multijoueur

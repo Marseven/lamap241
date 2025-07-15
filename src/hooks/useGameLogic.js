@@ -46,12 +46,45 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
       }));
     } catch (error) {
       console.error("Erreur lors du chargement du jeu:", error);
-      setError(error.message);
-      setGameState((prev) => ({
-        ...prev,
-        message: "Erreur de chargement",
-        gamePhase: "error",
-      }));
+      
+      // Vérifier si c'est une erreur de "pas de jeu en cours"
+      if (error.message === "Aucun jeu en cours dans cette salle") {
+        // Vérifier le statut de la salle
+        try {
+          const roomInfo = await api.getRoom(gameId);
+          if (roomInfo.status === 'waiting') {
+            setGameState((prev) => ({
+              ...prev,
+              status: "waiting",
+              gamePhase: "waiting",
+              message: "En attente d'autres joueurs...",
+              roomInfo: roomInfo,
+            }));
+            setError(null);
+          } else {
+            setError(error.message);
+            setGameState((prev) => ({
+              ...prev,
+              message: "Erreur de chargement",
+              gamePhase: "error",
+            }));
+          }
+        } catch (roomError) {
+          setError(error.message);
+          setGameState((prev) => ({
+            ...prev,
+            message: "Erreur de chargement",
+            gamePhase: "error",
+          }));
+        }
+      } else {
+        setError(error.message);
+        setGameState((prev) => ({
+          ...prev,
+          message: "Erreur de chargement",
+          gamePhase: "error",
+        }));
+      }
     } finally {
       setLoading(false);
     }
@@ -89,6 +122,24 @@ export const useGameLogic = (gameId, gameMode = "multiplayer") => {
         });
       } catch (error) {
         console.error("Erreur polling:", error);
+        
+        // Si c'est une erreur de "pas de jeu en cours", vérifier le statut de la salle
+        if (error.message === "Aucun jeu en cours dans cette salle") {
+          try {
+            const roomInfo = await api.getRoom(gameId);
+            if (roomInfo.status === 'waiting') {
+              setGameState((prev) => ({
+                ...prev,
+                status: "waiting",
+                gamePhase: "waiting",
+                message: "En attente d'autres joueurs...",
+                roomInfo: roomInfo,
+              }));
+            }
+          } catch (roomError) {
+            // Ignorer l'erreur de polling
+          }
+        }
       }
     }, 2000); // Poll toutes les 2 secondes
 
