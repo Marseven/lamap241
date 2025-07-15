@@ -590,17 +590,49 @@ export default function GameRoom() {
   // Affichage de l'erreur pour multijoueur
   if (gameMode === 'multiplayer' && error) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">😕</div>
-          <h1 className="text-2xl font-bold mb-2">Erreur de chargement</h1>
-          <p className="text-gray-400 mb-6">{error}</p>
+      <div className="game-rooms-page">
+        <div className="rooms-header">
           <button 
             onClick={() => navigate('/rooms')}
-            className="btn-primary"
+            className="back-btn"
           >
-            Retour aux salles
+            ← Retour aux salles
           </button>
+          <h1 className="page-title">⚠️ Erreur</h1>
+          <div className="create-btn" style={{ visibility: 'hidden' }}>
+            + Créer
+          </div>
+        </div>
+
+        <div className="empty-state">
+          <div className="empty-icon">
+            ⚠️
+          </div>
+          <div className="empty-title">
+            Erreur de chargement
+          </div>
+          <div className="empty-message">
+            {error}
+          </div>
+          <div className="empty-actions">
+            <button 
+              onClick={() => window.location.reload()}
+              className="btn-primary"
+            >
+              <span className="btn-icon">🔄</span>
+              Réessayer
+            </button>
+            <button 
+              onClick={() => navigate('/rooms')}
+              className="btn-secondary"
+            >
+              <span className="btn-icon">🏠</span>
+              Retour aux salles
+            </button>
+          </div>
+          <div className="empty-info">
+            Code de la salle : {gameId}
+          </div>
         </div>
       </div>
     );
