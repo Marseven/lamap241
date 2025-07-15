@@ -9,6 +9,17 @@ export default function WaitingRoom({ roomInfo, gameId }) {
   const [players, setPlayers] = useState(roomInfo?.players || []);
   const [roomStatus, setRoomStatus] = useState(roomInfo?.status || 'waiting');
 
+  // Données par défaut si roomInfo n'est pas complète
+  const safeRoomInfo = {
+    name: roomInfo?.name || 'Salle de jeu',
+    is_exhibition: roomInfo?.is_exhibition || false,
+    bet_amount: roomInfo?.bet_amount || 0,
+    max_players: roomInfo?.max_players || 2,
+    status: roomInfo?.status || 'waiting',
+    players: roomInfo?.players || [],
+    ...roomInfo
+  };
+
   // WebSocket pour les mises à jour de la salle
   const roomChannel = useRoomWebSocket(gameId, {
     onPlayerJoined: (event) => {
@@ -41,7 +52,7 @@ export default function WaitingRoom({ roomInfo, gameId }) {
   };
 
   const currentPlayerCount = players.length;
-  const maxPlayers = roomInfo?.max_players || 2;
+  const maxPlayers = safeRoomInfo.max_players;
   const isRoomFull = currentPlayerCount >= maxPlayers;
 
   return (
@@ -52,10 +63,10 @@ export default function WaitingRoom({ roomInfo, gameId }) {
             <span className="text-3xl">⏳</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            {roomInfo?.name || 'Salle de jeu'}
+            {safeRoomInfo.name}
           </h1>
           <p className="text-gray-600">
-            {roomInfo?.is_exhibition ? 'Partie d\'exhibition' : `Mise: ${roomInfo?.bet_amount || 0} FCFA`}
+            {safeRoomInfo.is_exhibition ? 'Partie d\'exhibition' : `Mise: ${safeRoomInfo.bet_amount} FCFA`}
           </p>
         </div>
 

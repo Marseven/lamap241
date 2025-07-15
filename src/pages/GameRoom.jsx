@@ -570,8 +570,13 @@ export default function GameRoom() {
     startNewGame();
   };
 
-  // Affichage du loading pour multijoueur
-  if (gameMode === 'multiplayer' && loading) {
+  // Affichage de la page d'attente pour multijoueur (priorité sur loading)
+  if (gameMode === 'multiplayer' && gameState.gamePhase === 'waiting') {
+    return <WaitingRoom roomInfo={gameState.roomInfo || { status: 'waiting', players: [] }} gameId={gameId} />;
+  }
+
+  // Affichage du loading pour multijoueur (seulement si pas en attente et pas d'erreur)
+  if (gameMode === 'multiplayer' && loading && gameState.gamePhase !== 'waiting' && !error) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -580,11 +585,6 @@ export default function GameRoom() {
         </div>
       </div>
     );
-  }
-
-  // Affichage de la page d'attente pour multijoueur
-  if (gameMode === 'multiplayer' && gameState.gamePhase === 'waiting') {
-    return <WaitingRoom roomInfo={gameState.roomInfo} gameId={gameId} />;
   }
 
   // Affichage de l'erreur pour multijoueur (seulement pour les vraies erreurs)
