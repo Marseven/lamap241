@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGameRoom } from '../contexts/GameRoomContext';
 import { useGameNotifications } from '../hooks/useGameNotifications';
+import '../styles/exhibition.css';
 
 export default function CreateRoomPage() {
   const { user } = useAuth();
@@ -20,7 +21,8 @@ export default function CreateRoomPage() {
     bet: '1000',
     timeLimit: '300',
     allowSpectators: false,
-    roundsToWin: '3'
+    roundsToWin: '3',
+    isExhibition: false
   });
 
   const [errors, setErrors] = useState({});
@@ -36,13 +38,16 @@ export default function CreateRoomPage() {
       newErrors.name = 'Le nom ne peut pas dépasser 30 caractères';
     }
 
-    const bet = parseInt(formData.bet);
-    if (!bet || bet < 500) {
-      newErrors.bet = 'Mise minimum : 500 FCFA';
-    } else if (bet > 100000) {
-      newErrors.bet = 'Mise maximum : 100,000 FCFA';
-    } else if (bet > (user?.balance || 0)) {
-      newErrors.bet = 'Solde insuffisant';
+    // Validation du pari seulement si ce n'est pas une partie d'exhibition
+    if (!formData.isExhibition) {
+      const bet = parseInt(formData.bet);
+      if (!bet || bet < 500) {
+        newErrors.bet = 'Mise minimum : 500 FCFA';
+      } else if (bet > 100000) {
+        newErrors.bet = 'Mise maximum : 100,000 FCFA';
+      } else if (bet > (user?.balance || 0)) {
+        newErrors.bet = 'Solde insuffisant';
+      }
     }
 
     const timeLimit = parseInt(formData.timeLimit);
@@ -64,21 +69,23 @@ export default function CreateRoomPage() {
     
     if (!validateForm()) return;
 
-    const bet = parseInt(formData.bet);
-    
-    // Vérifications supplémentaires avec notifications
-    if (bet > (user?.balance || 0)) {
-      notifyInsufficientFunds(bet, user?.balance || 0);
-      return;
+    // Vérifications supplémentaires avec notifications (seulement pour les parties avec pari)
+    if (!formData.isExhibition) {
+      const bet = parseInt(formData.bet);
+      if (bet > (user?.balance || 0)) {
+        notifyInsufficientFunds(bet, user?.balance || 0);
+        return;
+      }
     }
 
     try {
       const roomData = {
         name: formData.name.trim(),
-        bet: bet,
+        bet: formData.isExhibition ? 0 : parseInt(formData.bet),
         timeLimit: parseInt(formData.timeLimit),
         allowSpectators: formData.allowSpectators,
-        roundsToWin: parseInt(formData.roundsToWin)
+        roundsToWin: parseInt(formData.roundsToWin),
+        isExhibition: formData.isExhibition
       };
 
       const result = await createRoom(roomData);
@@ -171,12 +178,67 @@ export default function CreateRoomPage() {
           </div>
         </div>
 
-        {/* Mise */}
+        {/* Type de partie */}
         <div className="form-section">
           <h3 className="section-title">
-            <span className="section-icon">💰</span>
-            Mise et enjeux
+            <span className="section-icon">🎯</span>
+            Type de partie
           </h3>
+          
+          <div className="game-type-selector">
+            <div className="game-type-options">
+              <label className={`game-type-option ${!formData.isExhibition ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="gameType"
+                  value="normal"
+                  checked={!formData.isExhibition}
+                  onChange={() => setFormData({...formData, isExhibition: false})}
+                  disabled={loading}
+                />
+                <div className="game-type-card">
+                  <div className="game-type-icon">💰</div>
+                  <h4>Partie officielle</h4>
+                  <p>Avec mise - Gains réels</p>
+                  <div className="game-type-features">
+                    <span>✓ Mise obligatoire</span>
+                    <span>✓ Gains en FCFA</span>
+                    <span>✓ Classement officiel</span>
+                  </div>
+                </div>
+              </label>
+              
+              <label className={`game-type-option ${formData.isExhibition ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="gameType"
+                  value="exhibition"
+                  checked={formData.isExhibition}
+                  onChange={() => setFormData({...formData, isExhibition: true})}
+                  disabled={loading}
+                />
+                <div className="game-type-card">
+                  <div className="game-type-icon">🎮</div>
+                  <h4>Partie d'exhibition</h4>
+                  <p>Sans mise - Juste pour s'amuser</p>
+                  <div className="game-type-features">
+                    <span>✓ Gratuit</span>
+                    <span>✓ Pas de risque</span>
+                    <span>✓ Entraînement</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Mise - Conditionnel */}
+        {!formData.isExhibition && (
+          <div className="form-section">
+            <h3 className="section-title">
+              <span className="section-icon">💰</span>
+              Mise et enjeux
+            </h3>
           
           <div className="form-group">
             <label className="form-label">
@@ -233,6 +295,7 @@ export default function CreateRoomPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Paramètres de jeu */}
         <div className="form-section">
@@ -323,25 +386,37 @@ export default function CreateRoomPage() {
             <div className="rule-item">
               <span className="rule-icon">🚫</span>
               <span className="rule-text">
-                <strong>Pas d'abandon autorisé</strong> - Quitter en cours de partie = perte de la mise
+                <strong>Pas d'abandon autorisé</strong> - Quitter en cours de partie {formData.isExhibition ? 'compte comme une défaite' : '= perte de la mise'}
               </span>
             </div>
-            <div className="rule-item">
-              <span className="rule-icon">💰</span>
-              <span className="rule-text">
-                <strong>Mise immédiate</strong> - Votre mise sera débitée dès la création
-              </span>
-            </div>
+            {!formData.isExhibition && (
+              <>
+                <div className="rule-item">
+                  <span className="rule-icon">💰</span>
+                  <span className="rule-text">
+                    <strong>Mise immédiate</strong> - Votre mise sera débitée dès la création
+                  </span>
+                </div>
+                <div className="rule-item">
+                  <span className="rule-icon">🏆</span>
+                  <span className="rule-text">
+                    <strong>Gains instantanés</strong> - Le gagnant reçoit 90% du pot immédiatement
+                  </span>
+                </div>
+              </>
+            )}
+            {formData.isExhibition && (
+              <div className="rule-item">
+                <span className="rule-icon">🎮</span>
+                <span className="rule-text">
+                  <strong>Partie gratuite</strong> - Aucune transaction financière, juste pour s'amuser
+                </span>
+              </div>
+            )}
             <div className="rule-item">
               <span className="rule-icon">⏰</span>
               <span className="rule-text">
                 <strong>Salle temporaire</strong> - Suppression automatique après 1h sans activité
-              </span>
-            </div>
-            <div className="rule-item">
-              <span className="rule-icon">🏆</span>
-              <span className="rule-text">
-                <strong>Gains instantanés</strong> - Le gagnant reçoit 90% du pot immédiatement
               </span>
             </div>
           </div>
@@ -350,7 +425,7 @@ export default function CreateRoomPage() {
         {/* Bouton de création */}
         <button
           type="submit"
-          disabled={loading || !formData.name.trim() || !formData.bet}
+          disabled={loading || !formData.name.trim() || (!formData.isExhibition && !formData.bet)}
           className="create-submit-btn"
         >
           {loading ? (
@@ -360,8 +435,11 @@ export default function CreateRoomPage() {
             </>
           ) : (
             <>
-              <span className="btn-icon">🚀</span>
-              Créer la salle ({formData.bet && `${formatAmount(parseInt(formData.bet))} FCFA`})
+              <span className="btn-icon">{formData.isExhibition ? '🎮' : '🚀'}</span>
+              {formData.isExhibition 
+                ? 'Créer la partie d\'exhibition (Gratuit)'
+                : `Créer la salle (${formData.bet && formatAmount(parseInt(formData.bet))} FCFA)`
+              }
             </>
           )}
         </button>

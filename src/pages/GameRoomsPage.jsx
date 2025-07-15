@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGameRoom } from '../contexts/GameRoomContext';
 import { useGameNotifications } from '../hooks/useGameNotifications';
+import '../styles/exhibition.css';
 
 export default function GameRoomsPage() {
   const { user } = useAuth();
@@ -58,7 +59,7 @@ export default function GameRoomsPage() {
         return;
       }
 
-      if (room.bet > (user?.balance || 0)) {
+      if (!room.isExhibition && room.bet > (user?.balance || 0)) {
         notifyInsufficientFunds(room.bet, user?.balance || 0);
         return;
       }
@@ -138,7 +139,7 @@ export default function GameRoomsPage() {
     return room.status === 'waiting' && 
            !room.players.includes(user?.pseudo) &&
            room.players.length < room.maxPlayers &&
-           room.bet <= (user?.balance || 0);
+           (room.isExhibition || room.bet <= (user?.balance || 0));
   };
 
   return (
@@ -234,25 +235,37 @@ export default function GameRoomsPage() {
                     <span className="creator-icon">👤</span>
                     {room.creator}
                     {room.isDemo && <span className="demo-badge">DÉMO</span>}
+                    {room.isExhibition && <span className="exhibition-badge">🎮 EXHIBITION</span>}
                   </div>
                 </div>
                 {getRoomStatusBadge(room)}
               </div>
 
               <div className="room-details">
-                <div className="room-bet">
-                  <span className="bet-icon">💰</span>
-                  <span className={`bet-amount ${getBetColor(room.bet)}`}>
-                    {new Intl.NumberFormat('fr-FR').format(room.bet)} FCFA
-                  </span>
-                </div>
-                
-                <div className="room-pot">
-                  <span className="pot-icon">🏆</span>
-                  <span className="pot-amount">
-                    Pot: {new Intl.NumberFormat('fr-FR').format(room.pot || room.bet * 2)} FCFA
-                  </span>
-                </div>
+                {room.isExhibition ? (
+                  <div className="room-exhibition">
+                    <span className="exhibition-icon">🎮</span>
+                    <span className="exhibition-text">
+                      Partie gratuite - Sans mise
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="room-bet">
+                      <span className="bet-icon">💰</span>
+                      <span className={`bet-amount ${getBetColor(room.bet)}`}>
+                        {new Intl.NumberFormat('fr-FR').format(room.bet)} FCFA
+                      </span>
+                    </div>
+                    
+                    <div className="room-pot">
+                      <span className="pot-icon">🏆</span>
+                      <span className="pot-amount">
+                        Pot: {new Intl.NumberFormat('fr-FR').format(room.pot || room.bet * 2)} FCFA
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <div className="room-time">
                   <span className="time-icon">⏰</span>
@@ -310,7 +323,7 @@ export default function GameRoomsPage() {
                     disabled
                     className="join-btn"
                     title={
-                      room.bet > (user?.balance || 0) 
+                      !room.isExhibition && room.bet > (user?.balance || 0) 
                         ? 'Solde insuffisant' 
                         : room.players.length >= room.maxPlayers 
                         ? 'Salle complète' 
@@ -318,7 +331,7 @@ export default function GameRoomsPage() {
                     }
                   >
                     <span className="btn-icon">💸</span>
-                    {room.bet > (user?.balance || 0) 
+                    {!room.isExhibition && room.bet > (user?.balance || 0) 
                       ? 'Solde insuffisant' 
                       : room.players.length >= room.maxPlayers 
                       ? 'Salle complète' 

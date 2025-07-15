@@ -227,16 +227,23 @@ class ApiService {
   }
 
   async createRoom(roomData) {
+    const requestData = {
+      name: roomData.name,
+      max_players: 2,
+      rounds_to_win: roomData.roundsToWin || 3,
+      time_limit: roomData.timeLimit || 300,
+      allow_spectators: roomData.allowSpectators || false,
+      is_exhibition: roomData.isExhibition || false,
+    };
+
+    // Ajouter bet_amount seulement si ce n'est pas une partie d'exhibition
+    if (!roomData.isExhibition) {
+      requestData.bet_amount = roomData.bet;
+    }
+
     return this.request("/rooms", {
       method: "POST",
-      body: JSON.stringify({
-        name: roomData.name,
-        bet_amount: roomData.bet,
-        max_players: 2,
-        rounds_to_win: roomData.roundsToWin || 3,
-        time_limit: roomData.timeLimit || 300,
-        allow_spectators: roomData.allowSpectators || false,
-      }),
+      body: JSON.stringify(requestData),
     });
   }
 

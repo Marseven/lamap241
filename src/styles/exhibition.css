@@ -1,0 +1,134 @@
+/* Styles pour les parties d'exhibition */
+
+/* Badge d'exhibition */
+.exhibition-badge {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Section exhibition dans les détails de la salle */
+.room-exhibition {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+}
+
+.exhibition-icon {
+  font-size: 1.2rem;
+}
+
+.exhibition-text {
+  font-size: 0.9rem;
+}
+
+/* Styles pour le sélecteur de type de partie */
+.game-type-selector {
+  margin-top: 12px;
+}
+
+.game-type-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.game-type-option {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.game-type-option input[type="radio"] {
+  display: none;
+}
+
+.game-type-card {
+  padding: 20px;
+  background: #1a1a2e;
+  border: 2px solid #2d2d44;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.game-type-option.active .game-type-card {
+  border-color: #4f46e5;
+  background: linear-gradient(135deg, #1a1a2e, #2d2d44);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+}
+
+.game-type-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.game-type-card h4 {
+  color: #ffffff;
+  margin: 8px 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.game-type-card p {
+  color: #9ca3af;
+  margin: 0 0 12px 0;
+  font-size: 0.85rem;
+}
+
+.game-type-features {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-type-features span {
+  color: #6b7280;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-type-option.active .game-type-features span {
+  color: #4f46e5;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .game-type-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .game-type-card {
+    padding: 16px;
+  }
+  
+  .exhibition-badge {
+    font-size: 0.7rem;
+    padding: 1px 6px;
+  }
+  
+  .room-exhibition {
+    padding: 6px 10px;
+  }
+  
+  .exhibition-text {
+    font-size: 0.8rem;
+  }
+}
