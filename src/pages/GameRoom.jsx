@@ -587,8 +587,8 @@ export default function GameRoom() {
     return <WaitingRoom roomInfo={gameState.roomInfo} gameId={gameId} />;
   }
 
-  // Affichage de l'erreur pour multijoueur
-  if (gameMode === 'multiplayer' && error) {
+  // Affichage de l'erreur pour multijoueur (seulement pour les vraies erreurs)
+  if (gameMode === 'multiplayer' && error && !error.includes("Aucun jeu en cours")) {
     return (
       <div className="game-rooms-page">
         <div className="rooms-header">
