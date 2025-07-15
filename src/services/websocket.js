@@ -27,6 +27,7 @@ class WebSocketService {
       wssPort: import.meta.env.VITE_REVERB_PORT,
       forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
       enabledTransports: ['ws', 'wss'],
+      authEndpoint: `${import.meta.env.VITE_API_URL}/broadcasting/auth`,
       auth: {
         headers: {
           Authorization: `Bearer ${token}`,
