@@ -48,7 +48,14 @@ const useGameStore = create((set, get) => ({
         const basicLeaderboard = await apiService.getLeaderboard();
         leaderboards = { leaderboards: { winnings: basicLeaderboard.leaderboard || [] } };
       }
-      set({ allLeaderboards: leaderboards.leaderboards, statsLoading: false });
+      const leaderboardData = leaderboards.leaderboards || {};
+      // Ensure each leaderboard type is an array
+      Object.keys(leaderboardData).forEach(key => {
+        if (!Array.isArray(leaderboardData[key])) {
+          leaderboardData[key] = [];
+        }
+      });
+      set({ allLeaderboards: leaderboardData, statsLoading: false });
       return leaderboards;
     } catch (error) {
       set({ statsError: error.message, statsLoading: false });
@@ -68,7 +75,7 @@ const useGameStore = create((set, get) => ({
         achievements = await apiService.getAchievements();
         achievements = { achievements: achievements.achievements || [] };
       }
-      set({ myAchievements: achievements.achievements, statsLoading: false });
+      set({ myAchievements: Array.isArray(achievements.achievements) ? achievements.achievements : [], statsLoading: false });
       return achievements;
     } catch (error) {
       set({ statsError: error.message, statsLoading: false });
@@ -119,7 +126,7 @@ const useGameStore = create((set, get) => ({
           ]
         };
       }
-      set({ availableBots: response.bots, botsLoading: false });
+      set({ availableBots: Array.isArray(response.bots) ? response.bots : [], botsLoading: false });
       return response;
     } catch (error) {
       set({ botsError: error.message, botsLoading: false });

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import useGameStore from '../stores/gameStore';
+import LoadingPage from './LoadingPage';
 
 const EnhancedLeaderboard = () => {
   const {
@@ -71,114 +72,194 @@ const EnhancedLeaderboard = () => {
 
   if (statsLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-      </div>
+      <LoadingPage 
+        title="Chargement des classements..."
+        subtitle="Récupération des données de performance"
+        showLogo={true}
+      />
     );
   }
 
   if (statsError) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Erreur lors du chargement: {statsError}</p>
+      <div className="mobile-container neon-theme">
+        <div style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '2rem',
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏆</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)', marginBottom: '1rem' }}>
+            Erreur de chargement des classements
+          </div>
+          <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '2rem' }}>
+            {statsError}
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'linear-gradient(135deg, var(--lamap-red), #a32222)',
+              color: 'var(--lamap-white)',
+              border: '2px solid var(--lamap-red)',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 15px rgba(198, 40, 40, 0.3)',
+            }}
+          >
+            🔄 Réessayer
+          </button>
+        </div>
       </div>
     );
   }
 
-  const currentLeaderboard = allLeaderboards?.[activeLeaderboard] || [];
+  const currentLeaderboard = Array.isArray(allLeaderboards?.[activeLeaderboard]) 
+    ? allLeaderboards[activeLeaderboard] 
+    : [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Classements</h1>
-        <p className="mt-2 text-gray-600">Découvrez les meilleurs joueurs de La Map 241</p>
+    <div className="mobile-container neon-theme">
+      <div className="lamap-section">
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--lamap-white)', textAlign: 'center', marginBottom: '1rem' }}>
+          🏆 Classements
+        </h1>
+        <p style={{ color: '#888', textAlign: 'center', marginBottom: '2rem' }}>
+          Découvrez les meilleurs joueurs de La Map 241
+        </p>
       </div>
 
       {/* Statistiques globales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Joueurs actifs</h3>
-          <p className="text-3xl font-bold text-blue-600">{globalStats?.total_players || 0}</p>
+      <div className="stats-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Joueurs actifs</h3>
+          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
+            {globalStats?.total_players || 0}
+          </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Parties jouées</h3>
-          <p className="text-3xl font-bold text-green-600">{(globalStats?.total_games || 0).toLocaleString()}</p>
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Parties jouées</h3>
+          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
+            {(globalStats?.total_games || 0).toLocaleString()}
+          </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Gains distribués</h3>
-          <p className="text-3xl font-bold text-yellow-600">{(globalStats?.total_winnings || 0).toLocaleString()} FCFA</p>
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Gains distribués</h3>
+          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
+            {(globalStats?.total_winnings || 0).toLocaleString()} FCFA
+          </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Achievements</h3>
-          <p className="text-3xl font-bold text-purple-600">{globalStats?.total_achievements || 0}</p>
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Achievements</h3>
+          <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
+            {globalStats?.total_achievements || 0}
+          </p>
         </div>
       </div>
 
       {/* Sélecteur de leaderboard */}
-      <div className="mb-8">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8 overflow-x-auto">
-            {leaderboardTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => setActiveLeaderboard(type.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeLeaderboard === type.id
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {type.name}
-              </button>
-            ))}
-          </nav>
+      <div className="lamap-section">
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', marginBottom: '1rem' }}>
+          {leaderboardTypes.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => setActiveLeaderboard(type.id)}
+              className="btn-menu"
+              style={{
+                background: activeLeaderboard === type.id 
+                  ? 'linear-gradient(135deg, var(--lamap-red), #a32222)' 
+                  : '#2A2A2A',
+                color: 'var(--lamap-white)',
+                border: activeLeaderboard === type.id ? '2px solid var(--lamap-red)' : '1px solid #444',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: activeLeaderboard === type.id ? '0 0 10px rgba(198, 40, 40, 0.3)' : 'none'
+              }}
+            >
+              {type.name}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Leaderboard actuel */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900">
+      <div className="lamap-section">
+        <div style={{ background: '#111', border: '1px solid var(--lamap-red)', borderRadius: '12px', padding: '1rem' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>
             {leaderboardTypes.find(t => t.id === activeLeaderboard)?.name}
           </h2>
-          <p className="text-sm text-gray-500">
+          <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '1rem' }}>
             {leaderboardTypes.find(t => t.id === activeLeaderboard)?.description}
           </p>
-        </div>
 
-        <div className="p-6">
           {currentLeaderboard.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun classement disponible</h3>
-              <p className="mt-1 text-sm text-gray-500">
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>
+                Aucun classement disponible
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: '#888' }}>
                 Les données de classement seront disponibles après quelques parties
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div style={{ display: 'grid', gap: '1rem' }}>
               {currentLeaderboard.map((player, index) => (
                 <div
                   key={player.id || index}
-                  className={`bg-white rounded-lg shadow-sm border-l-4 p-4 ${
-                    index + 1 <= 3 ? 'border-yellow-400' : 'border-gray-200'
-                  }`}
+                  style={{
+                    background: '#1A1A1A',
+                    border: index + 1 <= 3 ? '2px solid #fbbf24' : '1px solid #444',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    boxShadow: index + 1 <= 3 ? '0 0 10px rgba(251, 191, 36, 0.2)' : 'none'
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                        index + 1 <= 3 ? 'bg-yellow-100' : 'bg-gray-100'
-                      }`}>
-                        <span className="text-sm font-bold">{getRankIcon(index + 1)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: index + 1 <= 3 ? '#fbbf24' : '#444',
+                        marginRight: '1rem'
+                      }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: index + 1 <= 3 ? '#000' : '#fff' }}>
+                          {getRankIcon(index + 1)}
+                        </span>
                       </div>
-                      <div className="ml-3">
-                        <h4 className="text-sm font-medium text-gray-900">{player.name || player.pseudo}</h4>
-                        <p className="text-sm text-gray-500">
+                      <div>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--lamap-white)', marginBottom: '0.25rem' }}>
+                          {player.name || player.pseudo}
+                        </h4>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--lamap-red)', fontWeight: 'bold' }}>
                           {formatValue(player.value, activeLeaderboard)}
                         </p>
                       </div>
                     </div>
                     {player.is_bot && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span style={{
+                        background: '#1d4ed8',
+                        color: '#fff',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '12px',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold'
+                      }}>
                         IA
                       </span>
                     )}

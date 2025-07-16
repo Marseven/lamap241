@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGameRoom } from '../contexts/GameRoomContext';
 import { useGameNotifications } from '../hooks/useGameNotifications';
+import LoadingPage from '../components/LoadingPage';
 import '../styles/exhibition.css';
 
 export default function GameRoomsPage() {
@@ -201,10 +202,11 @@ export default function GameRoomsPage() {
       {/* Liste des salles */}
       <div className="rooms-list">
         {loading ? (
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <div>Chargement des salles...</div>
-          </div>
+          <LoadingPage 
+            title="Chargement des salles..."
+            subtitle="Recherche des parties disponibles"
+            showLogo={false}
+          />
         ) : filteredRooms.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">

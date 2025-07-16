@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import useGameStore from '../stores/gameStore';
+import LoadingPage from './LoadingPage';
 
 const StatsDashboard = () => {
   const {
@@ -33,78 +34,129 @@ const StatsDashboard = () => {
 
   if (statsLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-      </div>
+      <LoadingPage 
+        title="Chargement des statistiques..."
+        subtitle="Récupération de vos données de jeu"
+        showLogo={true}
+      />
     );
   }
 
   if (statsError) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">Erreur lors du chargement: {statsError}</p>
+      <div className="mobile-container neon-theme">
+        <div style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          padding: '2rem',
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>❌</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)', marginBottom: '1rem' }}>
+            Erreur de chargement
+          </div>
+          <div style={{ fontSize: '0.9rem', color: '#888', marginBottom: '2rem' }}>
+            {statsError}
+          </div>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'linear-gradient(135deg, var(--lamap-red), #a32222)',
+              color: 'var(--lamap-white)',
+              border: '2px solid var(--lamap-red)',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 15px rgba(198, 40, 40, 0.3)',
+            }}
+          >
+            🔄 Réessayer
+          </button>
+        </div>
       </div>
     );
   }
 
   const stats = detailedStats?.basic || {};
   const financialStats = detailedStats?.financial || {};
-  const achievements = myAchievements || [];
+  const achievements = Array.isArray(myAchievements) ? myAchievements : [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Statistiques</h1>
-        <p className="mt-2 text-gray-600">Suivez vos performances et vos achievements</p>
+    <div className="mobile-container neon-theme">
+      <div className="lamap-section">
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--lamap-white)', textAlign: 'center', marginBottom: '1rem' }}>
+          📊 Tableau de Bord
+        </h1>
+        <p style={{ color: '#888', textAlign: 'center', marginBottom: '2rem' }}>
+          Suivez vos performances et vos achievements
+        </p>
       </div>
 
       {/* Statistiques de base */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Parties jouées</h3>
-          <p className="text-3xl font-bold text-blue-600">
+      <div className="stats-row" style={{ marginBottom: '2rem' }}>
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '1rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Parties jouées</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
             {(stats.games_won || 0) + (stats.games_lost || 0)}
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Victoires</h3>
-          <p className="text-3xl font-bold text-green-600">
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '1rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Victoires</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
             {stats.games_won || 0}
           </p>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Série actuelle</h3>
-          <p className="text-3xl font-bold text-red-600">
+        <div style={{ textAlign: 'center', background: '#111', padding: '1rem', borderRadius: '12px', border: '1px solid var(--lamap-red)' }}>
+          <h3 style={{ fontSize: '1rem', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>Série actuelle</h3>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--lamap-red)' }}>
             {stats.current_streak || 0}
-          </p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Gains totaux</h3>
-          <p className="text-3xl font-bold text-yellow-600">
-            {(financialStats.total_won || 0).toLocaleString()} FCFA
           </p>
         </div>
       </div>
 
       {/* Achievements */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Mes Achievements</h2>
+      <div className="lamap-section">
+        <h3 style={{ fontSize: '1.1rem', color: 'var(--lamap-white)', marginBottom: '1rem' }}>
+          🏆 Mes Achievements
+        </h3>
         
         {achievements.length === 0 ? (
-          <p className="text-gray-500">Aucun achievement débloqué pour le moment</p>
+          <p style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>
+            Aucun achievement débloqué pour le moment
+          </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gap: '1rem' }}>
             {achievements.slice(0, 6).map((achievement, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900">{achievement.name}</h4>
-                <p className="text-sm text-gray-600">{achievement.description}</p>
-                <div className="flex items-center mt-2">
-                  <span className="text-sm font-medium">{achievement.points} points</span>
+              <div 
+                key={index} 
+                style={{ 
+                  background: '#111', 
+                  border: '1px solid var(--lamap-red)', 
+                  borderRadius: '12px', 
+                  padding: '1rem',
+                  boxShadow: '0 0 10px rgba(198, 40, 40, 0.2)'
+                }}
+              >
+                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--lamap-white)', marginBottom: '0.5rem' }}>
+                  {achievement.name}
+                </h4>
+                <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '0.5rem' }}>
+                  {achievement.description}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--lamap-red)', fontWeight: 'bold' }}>
+                    {achievement.points} points
+                  </span>
                   {achievement.reward && (
-                    <span className="ml-2 text-sm text-green-600">
+                    <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 'bold' }}>
                       +{achievement.reward} FCFA
                     </span>
                   )}

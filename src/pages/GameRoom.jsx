@@ -7,6 +7,8 @@ import GameBoard from '../components/GameBoard';
 import GameHeader from '../components/GameHeader';
 import PlayerInfo from '../components/PlayerInfo';
 import WaitingRoom from '../components/WaitingRoom';
+import LoadingPage from '../components/LoadingPage';
+import RoomJoinLoading from '../components/RoomJoinLoading';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationToast from '../components/NotificationToast';
 import * as GarameLogic from '../utils/garameLogic';
@@ -578,12 +580,13 @@ export default function GameRoom() {
   // Affichage du loading pour multijoueur (seulement si pas en attente et pas d'erreur)
   if (gameMode === 'multiplayer' && loading && gameState.gamePhase !== 'waiting' && !error) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading-spinner mb-4"></div>
-          <p>Chargement de la partie...</p>
-        </div>
-      </div>
+      <RoomJoinLoading 
+        roomCode={gameId}
+        roomName={gameState.roomInfo?.name}
+        playerCount={gameState.roomInfo?.players?.length || 0}
+        maxPlayers={gameState.roomInfo?.maxPlayers || 4}
+        status="loading"
+      />
     );
   }
 
@@ -832,21 +835,72 @@ export default function GameRoom() {
                 <div className="flex gap-3 justify-center">
                   <button 
                     onClick={handleNewGame} 
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-lg transition-colors shadow-lg"
+                    className="btn-primary"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--lamap-red), #a32222)',
+                      color: 'var(--lamap-white)',
+                      border: '2px solid var(--lamap-red)',
+                      borderRadius: '12px',
+                      padding: '16px 24px',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 15px rgba(198, 40, 40, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 20px rgba(198, 40, 40, 0.5)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 15px rgba(198, 40, 40, 0.3)';
+                    }}
                   >
                     🎮 Nouvelle Partie
                   </button>
                   
                   <button 
                     onClick={() => navigate('/')} 
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    className="btn-secondary"
+                    style={{
+                      background: '#2A2A2A',
+                      color: 'var(--lamap-white)',
+                      border: '1px solid #444',
+                      borderRadius: '12px',
+                      padding: '16px 24px',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.background = '#444';
+                      e.target.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.background = '#2A2A2A';
+                      e.target.style.transform = 'translateY(0)';
+                    }}
                   >
                     🏠 Accueil
                   </button>
                 </div>
 
                 {/* Message d'encouragement */}
-                <div className="text-sm text-gray-400 mt-3">
+                <div style={{ 
+                  fontSize: '0.9rem', 
+                  color: '#888', 
+                  marginTop: '1rem',
+                  textAlign: 'center',
+                  fontStyle: 'italic'
+                }}>
                   {currentState.winner === 'player' ? 
                     (currentState.koraBonus === 2 ? '🔥 KORA ! Victoire magistrale avec un 3 !' : '🔥 Excellent ! Vous maîtrisez le Garame !') : 
                     '💪 Ne lâchez rien ! La prochaine sera la bonne !'

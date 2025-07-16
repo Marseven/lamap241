@@ -5,7 +5,7 @@ import { useGameRoom } from '../contexts/GameRoomContext';
 export default function Home() {
   const { user } = useAuth();
   const { getAvailableRooms } = useGameRoom();
-  const availableRooms = getAvailableRooms();
+  const availableRooms = Array.isArray(getAvailableRooms()) ? getAvailableRooms() : [];
 
   return (
     <div className="mobile-container">

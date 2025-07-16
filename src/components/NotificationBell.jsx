@@ -8,8 +8,9 @@ export default function NotificationBell() {
   const panelRef = useRef(null);
   const buttonRef = useRef(null);
   
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const recentNotifications = notifications.slice(0, 10);
+  const notificationsArray = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = notificationsArray.filter(n => !n.read).length;
+  const recentNotifications = notificationsArray.slice(0, 10);
 
   const togglePanel = () => {
     setShowPanel(!showPanel);
