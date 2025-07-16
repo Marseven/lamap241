@@ -1,5 +1,6 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import WebSocketFallbackService from './websocketFallback.js';
 
 // Configuration pour utiliser Reverb
 window.Pusher = Pusher;
@@ -14,6 +15,8 @@ class WebSocketService {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000;
     this.heartbeatInterval = null;
+    this.fallbackMode = false;
+    this.fallbackService = WebSocketFallbackService;
   }
 
   /**
@@ -25,6 +28,10 @@ class WebSocketService {
     }
 
     this.connectionState = 'connecting';
+    
+    // Configuration adaptée pour production/développement
+    const isProduction = import.meta.env.VITE_APP_ENV === 'production' || 
+                        import.meta.env.VITE_REVERB_HOST !== 'localhost';
     
     this.echo = new Echo({
       broadcaster: 'reverb',
@@ -40,6 +47,9 @@ class WebSocketService {
           Authorization: `Bearer ${token}`,
         },
       },
+      // Fallback pour éviter les erreurs en production
+      cluster: isProduction ? undefined : 'mt1',
+      encrypted: import.meta.env.VITE_REVERB_SCHEME === 'https',
     });
 
     // Écouter les événements de connexion
@@ -60,6 +70,12 @@ class WebSocketService {
     this.echo.connector.pusher.connection.bind('error', (error) => {
       console.error('❌ Erreur WebSocket:', error);
       this.connectionState = 'error';
+      
+      // Activer le mode fallback si l'erreur persiste
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.log('🔄 Activation du mode fallback WebSocket');
+        this.activateFallbackMode(token);
+      }
     });
 
     // Écouter les notifications globales
@@ -171,10 +187,25 @@ class WebSocketService {
     }));
   }
 
+
   /**
-   * Join a room channel
+   * Activate fallback mode
+   */
+  activateFallbackMode(token) {
+    this.fallbackMode = true;
+    this.fallbackService.connect(token);
+    this.connectionState = 'fallback';
+    console.log('🔄 Mode fallback WebSocket activé');
+  }
+
+  /**
+   * Proxy methods to fallback service when in fallback mode
    */
   joinRoom(roomCode, callbacks = {}) {
+    if (this.fallbackMode) {
+      return this.fallbackService.joinRoom(roomCode, callbacks);
+    }
+    
     if (!this.echo) {
       console.error('WebSocket not connected');
       return null;
@@ -215,6 +246,10 @@ class WebSocketService {
    * Join a game channel
    */
   joinGame(gameCode, callbacks = {}) {
+    if (this.fallbackMode) {
+      return this.fallbackService.joinGame(gameCode, callbacks);
+    }
+    
     if (!this.echo) {
       console.error('WebSocket not connected');
       return null;
@@ -259,6 +294,10 @@ class WebSocketService {
    * Leave a channel
    */
   leaveChannel(channelName) {
+    if (this.fallbackMode) {
+      return this.fallbackService.leaveChannel(channelName);
+    }
+    
     if (this.channels.has(channelName)) {
       this.echo.leave(channelName);
       this.channels.delete(channelName);
@@ -270,6 +309,9 @@ class WebSocketService {
    * Leave room
    */
   leaveRoom(roomCode) {
+    if (this.fallbackMode) {
+      return this.fallbackService.leaveRoom(roomCode);
+    }
     this.leaveChannel(`room.${roomCode}`);
   }
 
@@ -277,6 +319,9 @@ class WebSocketService {
    * Leave game
    */
   leaveGame(gameCode) {
+    if (this.fallbackMode) {
+      return this.fallbackService.leaveGame(gameCode);
+    }
     this.leaveChannel(`game.${gameCode}`);
   }
 
@@ -284,6 +329,9 @@ class WebSocketService {
    * Get connection status
    */
   isConnected() {
+    if (this.fallbackMode) {
+      return this.fallbackService.isConnected();
+    }
     return this.connectionState === 'connected' && this.echo !== null;
   }
 
@@ -291,6 +339,9 @@ class WebSocketService {
    * Get connection state
    */
   getConnectionState() {
+    if (this.fallbackMode) {
+      return this.fallbackService.getConnectionState();
+    }
     return this.connectionState;
   }
 
@@ -298,6 +349,9 @@ class WebSocketService {
    * Get all active channels
    */
   getActiveChannels() {
+    if (this.fallbackMode) {
+      return this.fallbackService.getActiveChannels();
+    }
     return Array.from(this.channels.keys());
   }
 
@@ -305,12 +359,17 @@ class WebSocketService {
    * Get WebSocket statistics
    */
   getStats() {
+    if (this.fallbackMode) {
+      return this.fallbackService.getStats();
+    }
+    
     return {
       connectionState: this.connectionState,
       reconnectAttempts: this.reconnectAttempts,
       activeChannels: this.getActiveChannels().length,
       channels: this.getActiveChannels(),
       isHeartbeatActive: this.heartbeatInterval !== null,
+      fallbackMode: this.fallbackMode,
     };
   }
 
@@ -318,6 +377,10 @@ class WebSocketService {
    * Request notification permission
    */
   async requestNotificationPermission() {
+    if (this.fallbackMode) {
+      return this.fallbackService.requestNotificationPermission();
+    }
+    
     if ('Notification' in window && Notification.permission === 'default') {
       const permission = await Notification.requestPermission();
       return permission === 'granted';
