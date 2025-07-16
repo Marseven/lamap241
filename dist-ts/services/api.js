@@ -25,12 +25,11 @@ class ApiService {
                     ...options.headers,
                 },
             });
-            // Gérer les erreurs HTTP
+            const data = await response.json();
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `HTTP error! status: ${response.status}`);
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
             }
-            return await response.json();
+            return data;
         }
         catch (error) {
             console.error("API Error:", error);
@@ -41,24 +40,34 @@ class ApiService {
     async login(credentials) {
         const response = await this.request("/auth/login", {
             method: "POST",
-            body: JSON.stringify(credentials),
+            body: JSON.stringify({
+                login: credentials.pseudo, // Le backend accepte email ou pseudo
+                password: credentials.password,
+            }),
         });
         if (response.token) {
             this.token = response.token;
             localStorage.setItem("lamap_token", response.token);
         }
-        return response;
+        return { success: true, user: response.user };
     }
     async register(userData) {
         const response = await this.request("/auth/register", {
             method: "POST",
-            body: JSON.stringify(userData),
+            body: JSON.stringify({
+                name: userData.pseudo, // Utiliser le pseudo comme nom
+                pseudo: userData.pseudo,
+                email: userData.email || `${userData.pseudo}@lamap241.com`, // Email par défaut
+                phone: userData.phone,
+                password: userData.password,
+                password_confirmation: userData.confirmPassword,
+            }),
         });
         if (response.token) {
             this.token = response.token;
             localStorage.setItem("lamap_token", response.token);
         }
-        return response;
+        return { success: true, user: response.user };
     }
     async logout() {
         try {
@@ -70,27 +79,103 @@ class ApiService {
         }
     }
     async getProfile() {
-        return this.request("/auth/profile");
+        const response = await this.request("/auth/profile");
+        return response.user;
     }
     // Wallet endpoints
     async getBalance() {
         return this.request("/wallet/balance");
     }
+    /**
+     * Initier un dépôt avec la nouvelle logique E-Billing
+     */
     async deposit(data) {
-        return this.request("/wallet/deposit", {
+        const response = await this.request("/wallet/deposit", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+                amount: data.amount,
+                payment_method: data.method,
+                phone_number: data.phoneNumber,
+            }),
         });
+        // Si succès, démarrer le polling côté frontend
+        if (response.success && response.transaction) {
+            this.startTransactionPolling(response.transaction.reference);
+        }
+        return response;
     }
+    /**
+     * Démarrer le polling d'une transaction côté frontend
+     */
+    startTransactionPolling(reference, callbacks = {}) {
+        const { onStatusUpdate = () => { }, onSuccess = () => { }, onFailure = () => { }, onTimeout = () => { }, } = callbacks;
+        const startTime = Date.now();
+        const maxDuration = 65000; // 65 secondes (un peu plus que les 60 du backend)
+        const interval = 2000; // Vérifier toutes les 2 secondes
+        console.log(`🔄 Démarrage du polling pour la transaction: ${reference}`);
+        const pollInterval = setInterval(async () => {
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= maxDuration) {
+                clearInterval(pollInterval);
+                console.log("⏰ Timeout du polling côté frontend");
+                onTimeout({ reference, elapsed });
+                return;
+            }
+            try {
+                const status = await this.getTransactionStatus(reference);
+                console.log(`📊 Status polling (${Math.round(elapsed / 1000)}s):`, status);
+                // Callback de mise à jour du statut
+                onStatusUpdate(status);
+                if (status.status === "completed") {
+                    clearInterval(pollInterval);
+                    console.log("✅ Transaction complétée via polling");
+                    onSuccess(status);
+                }
+                else if (status.status === "failed") {
+                    clearInterval(pollInterval);
+                    console.log("❌ Transaction échouée via polling");
+                    onFailure(status);
+                }
+            }
+            catch (error) {
+                console.error("🚨 Erreur lors du polling:", error);
+                // Ne pas arrêter le polling pour une erreur temporaire
+            }
+        }, interval);
+        // Retourner une fonction pour arrêter le polling manuellement
+        return () => clearInterval(pollInterval);
+    }
+    /**
+     * Vérifier le statut d'une transaction
+     */
+    async getTransactionStatus(reference) {
+        return this.request(`/wallet/transaction/${reference}/status`);
+    }
+    /**
+     * Retrait (logique inchangée)
+     */
     async withdraw(data) {
         return this.request("/wallet/withdraw", {
             method: "POST",
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+                amount: data.amount,
+                payment_method: data.method,
+                phone_number: data.phoneNumber,
+            }),
         });
     }
+    /**
+     * Obtenir l'historique des transactions
+     */
     async getTransactions(params = {}) {
         const query = new URLSearchParams(params).toString();
         return this.request(`/wallet/transactions?${query}`);
+    }
+    /**
+     * Obtenir les détails d'une transaction
+     */
+    async getTransactionDetails(reference) {
+        return this.request(`/wallet/transactions/${reference}`);
     }
     // Game rooms endpoints
     async getRooms(params = {}) {
@@ -98,32 +183,55 @@ class ApiService {
         return this.request(`/rooms?${query}`);
     }
     async createRoom(roomData) {
+        const requestData = {
+            name: roomData.name,
+            max_players: 2,
+            rounds_to_win: roomData.roundsToWin || 3,
+            time_limit: roomData.timeLimit || 300,
+            allow_spectators: roomData.allowSpectators || false,
+            is_exhibition: roomData.isExhibition || false,
+        };
+        // Ajouter bet_amount seulement si ce n'est pas une partie d'exhibition
+        if (!roomData.isExhibition) {
+            requestData.bet_amount = roomData.bet;
+        }
         return this.request("/rooms", {
             method: "POST",
-            body: JSON.stringify(roomData),
+            body: JSON.stringify(requestData),
         });
     }
-    async joinRoom(roomId) {
-        return this.request(`/rooms/${roomId}/join`, {
+    async joinRoom(roomCode) {
+        return this.request(`/rooms/${roomCode}/join`, {
             method: "POST",
         });
     }
-    async leaveRoom(roomId) {
-        return this.request(`/rooms/${roomId}/leave`, {
+    async leaveRoom(roomCode) {
+        return this.request(`/rooms/${roomCode}/leave`, {
             method: "POST",
         });
     }
-    async getRoom(roomId) {
-        return this.request(`/rooms/${roomId}`);
+    async getRoom(roomCode) {
+        return this.request(`/rooms/${roomCode}`);
+    }
+    async markPlayerReady(roomCode) {
+        return this.request(`/rooms/${roomCode}/ready`, {
+            method: "POST",
+        });
     }
     // Game endpoints
     async getGameState(gameId) {
-        return this.request(`/games/${gameId}`);
+        const response = await this.request(`/games/${gameId}/state`);
+        return response.state;
     }
     async playCard(gameId, cardData) {
         return this.request(`/games/${gameId}/play`, {
             method: "POST",
-            body: JSON.stringify(cardData),
+            body: JSON.stringify({ card: cardData }),
+        });
+    }
+    async passCard(gameId) {
+        return this.request(`/games/${gameId}/pass`, {
+            method: "POST",
         });
     }
     async forfeitGame(gameId) {
@@ -131,17 +239,172 @@ class ApiService {
             method: "POST",
         });
     }
-    // WebSocket pour le temps réel
-    connectWebSocket(gameId) {
-        const wsUrl = API_BASE_URL.replace("http", "ws").replace("/api", "");
-        const ws = new WebSocket(`${wsUrl}/game/${gameId}?token=${this.token}`);
-        ws.onopen = () => {
-            console.log("WebSocket connected");
-        };
-        ws.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-        return ws;
+    async getGameMoves(gameId) {
+        const response = await this.request(`/games/${gameId}/moves`);
+        return response.moves;
+    }
+    // Stats endpoints
+    async getMyStats() {
+        const response = await this.request("/stats/me");
+        return response.stats;
+    }
+    async getLeaderboard(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        const response = await this.request(`/stats/leaderboard?${query}`);
+        return response;
+    }
+    async getAchievements() {
+        const response = await this.request("/stats/achievements");
+        return response;
+    }
+    async getUserStats(userId) {
+        const response = await this.request(`/stats/user/${userId}`);
+        return response;
+    }
+    // Enhanced Stats endpoints (nouveau backend optimisé)
+    async getDetailedStats() {
+        const response = await this.request("/enhanced-stats/me/detailed");
+        return response;
+    }
+    async getAllLeaderboards() {
+        const response = await this.request("/enhanced-stats/leaderboards");
+        return response;
+    }
+    async getMyAchievements() {
+        const response = await this.request("/enhanced-stats/me/achievements");
+        return response;
+    }
+    async getGlobalStats() {
+        const response = await this.request("/enhanced-stats/global");
+        return response;
+    }
+    async compareStats(userId) {
+        const response = await this.request(`/enhanced-stats/compare/${userId}`);
+        return response;
+    }
+    async getLeaderboardDetailed(type, params = {}) {
+        const query = new URLSearchParams(params).toString();
+        const response = await this.request(`/enhanced-stats/leaderboards/${type}?${query}`);
+        return response;
+    }
+    // Bot Management endpoints
+    async getBots(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        const response = await this.request(`/bots?${query}`);
+        return response;
+    }
+    async createBot(botData) {
+        return this.request("/bots", {
+            method: "POST",
+            body: JSON.stringify({
+                name: botData.name,
+                difficulty: botData.difficulty || 'medium',
+                avatar: botData.avatar
+            }),
+        });
+    }
+    async addBotToRoom(roomCode, botId) {
+        return this.request(`/bots/rooms/${roomCode}/add`, {
+            method: "POST",
+            body: JSON.stringify({ bot_id: botId }),
+        });
+    }
+    async makeBotPlay(gameId, botId) {
+        return this.request(`/bots/games/${gameId}/play`, {
+            method: "POST",
+            body: JSON.stringify({ bot_id: botId }),
+        });
+    }
+    async getBotStats(botId) {
+        const response = await this.request(`/bots/${botId}/stats`);
+        return response;
+    }
+    // Game Transitions endpoints
+    async getRoomTransitionState(roomCode) {
+        const response = await this.request(`/transitions/rooms/${roomCode}/state`);
+        return response;
+    }
+    async triggerNextRound(roomCode) {
+        return this.request(`/transitions/rooms/${roomCode}/next-round`, {
+            method: "POST",
+        });
+    }
+    async getRoomHistory(roomCode) {
+        const response = await this.request(`/transitions/rooms/${roomCode}/history`);
+        return response;
+    }
+    async getTransitionStatus(roomCode) {
+        const response = await this.request(`/transitions/rooms/${roomCode}/status`);
+        return response;
+    }
+    // Méthodes utilitaires pour le frontend
+    /**
+     * Valider un numéro de téléphone gabonais
+     */
+    validateGabonPhone(phone) {
+        const gabonPhoneRegex = /^(074|077|076|062|065|066|060)[0-9]{6}$/;
+        return gabonPhoneRegex.test(phone);
+    }
+    /**
+     * Déterminer l'opérateur depuis le numéro
+     */
+    getOperatorFromPhone(phone) {
+        if (!this.validateGabonPhone(phone)) {
+            return null;
+        }
+        const prefix = phone.substring(0, 3);
+        if (["074", "077", "076"].includes(prefix)) {
+            return "airtel";
+        }
+        if (["062", "065", "066", "060"].includes(prefix)) {
+            return "moov";
+        }
+        return null;
+    }
+    /**
+     * Formater un montant en FCFA
+     */
+    formatAmount(amount) {
+        return new Intl.NumberFormat("fr-FR", {
+            style: "currency",
+            currency: "XAF",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount);
+    }
+    /**
+     * Obtenir le statut de santé de l'API
+     */
+    async getHealthStatus() {
+        try {
+            return await this.request("/health");
+        }
+        catch (error) {
+            return { status: "error", message: error.message };
+        }
+    }
+    /**
+     * Tester la connectivité avec les callbacks
+     */
+    async testCallbackConnectivity() {
+        try {
+            // Utiliser l'endpoint de test sans authentification
+            const response = await fetch(`${API_BASE_URL}/callback/test`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    test: "frontend_connectivity",
+                    timestamp: new Date().toISOString(),
+                }),
+            });
+            return await response.json();
+        }
+        catch (error) {
+            console.error("Test de connectivité échoué:", error);
+            throw error;
+        }
     }
 }
 export default new ApiService();

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRoomWebSocket } from '../hooks/useWebSocket';
 import { useNavigate } from 'react-router-dom';
+import BotManager from './BotManager';
+import { CpuChipIcon } from '@heroicons/react/24/outline';
 
 export default function WaitingRoom({ roomInfo, gameId }) {
   const { user } = useAuth();

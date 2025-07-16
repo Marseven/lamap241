@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://lamap.mebodorichard.com/api";
+  import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 class ApiService {
   constructor() {
@@ -318,6 +318,97 @@ class ApiService {
 
   async getUserStats(userId) {
     const response = await this.request(`/stats/user/${userId}`);
+    return response;
+  }
+
+  // Enhanced Stats endpoints (nouveau backend optimisé)
+  async getDetailedStats() {
+    const response = await this.request("/enhanced-stats/me/detailed");
+    return response;
+  }
+
+  async getAllLeaderboards() {
+    const response = await this.request("/enhanced-stats/leaderboards");
+    return response;
+  }
+
+  async getMyAchievements() {
+    const response = await this.request("/enhanced-stats/me/achievements");
+    return response;
+  }
+
+  async getGlobalStats() {
+    const response = await this.request("/enhanced-stats/global");
+    return response;
+  }
+
+  async compareStats(userId) {
+    const response = await this.request(`/enhanced-stats/compare/${userId}`);
+    return response;
+  }
+
+  async getLeaderboardDetailed(type, params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const response = await this.request(`/enhanced-stats/leaderboards/${type}?${query}`);
+    return response;
+  }
+
+  // Bot Management endpoints
+  async getBots(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const response = await this.request(`/bots?${query}`);
+    return response;
+  }
+
+  async createBot(botData) {
+    return this.request("/bots", {
+      method: "POST",
+      body: JSON.stringify({
+        name: botData.name,
+        difficulty: botData.difficulty || 'medium',
+        avatar: botData.avatar
+      }),
+    });
+  }
+
+  async addBotToRoom(roomCode, botId) {
+    return this.request(`/bots/rooms/${roomCode}/add`, {
+      method: "POST",
+      body: JSON.stringify({ bot_id: botId }),
+    });
+  }
+
+  async makeBotPlay(gameId, botId) {
+    return this.request(`/bots/games/${gameId}/play`, {
+      method: "POST",
+      body: JSON.stringify({ bot_id: botId }),
+    });
+  }
+
+  async getBotStats(botId) {
+    const response = await this.request(`/bots/${botId}/stats`);
+    return response;
+  }
+
+  // Game Transitions endpoints
+  async getRoomTransitionState(roomCode) {
+    const response = await this.request(`/transitions/rooms/${roomCode}/state`);
+    return response;
+  }
+
+  async triggerNextRound(roomCode) {
+    return this.request(`/transitions/rooms/${roomCode}/next-round`, {
+      method: "POST",
+    });
+  }
+
+  async getRoomHistory(roomCode) {
+    const response = await this.request(`/transitions/rooms/${roomCode}/history`);
+    return response;
+  }
+
+  async getTransitionStatus(roomCode) {
+    const response = await this.request(`/transitions/rooms/${roomCode}/status`);
     return response;
   }
 

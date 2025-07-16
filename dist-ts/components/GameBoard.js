@@ -1,34 +1,27 @@
-import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import React from 'react';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import Card from './Card';
 import GameMessage from './GameMessage';
-const GameBoard = ({ playerCards, opponentCards, tableCard, opponentTableCard, message, currentPlayer, selectedCard, onCardSelect, onCardPlay, disabled = false }) => {
+const GameBoard = ({ playerCards, opponentCards, tableCards = [], // Toutes les cartes jouées dans l'ordre
+playerTableCards = [], // Cartes du joueur sur la table
+opponentTableCards = [], // Cartes de l'adversaire sur la table
+message, currentPlayer, onCardPlay, disabled = false, playerName = "Toi", opponentName = "Adversaire", playerScore = 0, opponentScore = 0, playableCards = [] // Cartes que le joueur peut jouer
+ }) => {
     const handleCardClick = (card) => {
         if (disabled || currentPlayer !== 'player')
             return;
-        if (selectedCard === card) {
-            // Double clic = jouer la carte
-            onCardPlay(card);
-        }
-        else {
-            // Simple clic = sélectionner
-            onCardSelect(card);
-        }
+        onCardPlay(card);
     };
     const isCardPlayable = (card) => {
         if (currentPlayer !== 'player' || disabled)
             return false;
-        // Si pas de carte sur la table, toutes les cartes sont jouables
-        if (!tableCard && !opponentTableCard)
-            return true;
-        // Si l'adversaire a joué et on doit répondre
-        if (opponentTableCard && !tableCard) {
-            return card.suit === opponentTableCard.suit && card.value > opponentTableCard.value;
-        }
-        return true;
+        return playableCards.some(pc => pc.value === card.value && pc.suit === card.suit);
     };
-    return (_jsxs("div", { className: "mobile-container text-white d-flex flex-column align-items-center", children: [_jsx("div", { className: "text-center mb-4", children: _jsxs("div", { className: "text-sm font-bold mb-2", children: ["\uD83E\uDD16 Adversaire (", opponentCards.length, " cartes)"] }) }), _jsx("div", { className: "flex flex-row justify-center gap-2 flex-wrap", children: opponentCards.map((_, i) => (_jsx("div", { className: "inline-block", children: _jsx(Card, { hidden: true }) }, i))) }), _jsxs("div", { className: "card-center", children: [opponentTableCard && (_jsxs("div", { className: "relative", children: [_jsx(Card, { value: opponentTableCard.value, suit: opponentTableCard.suit }), _jsx("div", { className: "absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs bg-blue-600 px-2 py-1 rounded", children: "IA" })] })), tableCard && (_jsxs("div", { className: "relative", children: [_jsx(Card, { value: tableCard.value, suit: tableCard.suit }), _jsx("div", { className: "absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs bg-green-600 px-2 py-1 rounded", children: "Toi" })] })), !tableCard && !opponentTableCard && (_jsxs("div", { className: "text-gray-500 text-center", children: [_jsx("div", { className: "text-4xxl mb-2", children: "\u2660" }), _jsx("div", { className: "text-sm", children: "Zone de jeu" })] }))] }), _jsx(GameMessage, { message: message, currentPlayer: currentPlayer, type: disabled ? 'warning' : 'normal' }), selectedCard && currentPlayer === 'player' && !disabled && (_jsxs("div", { className: "bg-red-800 p-3 rounded-lg mb-4 text-center slide-up", children: [_jsx("div", { className: "text-sm mb-2", children: "Carte s\u00E9lectionn\u00E9e :" }), _jsx("div", { className: "flex justify-center mb-3", children: _jsx(Card, { value: selectedCard.value, suit: selectedCard.suit, selected: true }) }), _jsxs("div", { className: "flex gap-2 justify-center", children: [_jsx("button", { onClick: () => onCardPlay(selectedCard), disabled: !isCardPlayable(selectedCard), className: "bg-green-600 hover:bg-green-700 disabled:bg-gray-600 px-4 py-2 rounded font-bold text-sm", children: "\u2713 Jouer" }), _jsx("button", { onClick: () => onCardSelect(null), className: "bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-bold text-sm", children: "\u2717 Annuler" })] })] })), _jsxs("div", { className: "text-center", children: [_jsxs("div", { className: "text-sm font-bold mb-2", children: ["\uD83D\uDC64 Tes cartes (", playerCards.length, ")"] }), currentPlayer === 'player' && !disabled && (_jsx("div", { className: "mt-3 text-xs text-gray-400", children: selectedCard ?
-                            'Clique sur "Jouer" ou double-clique sur la carte' :
-                            'Clique sur une carte pour la sélectionner' }))] }), _jsx("div", { className: "flex flex-row justify-center gap-2 flex-wrap", children: playerCards.map((card, i) => (_jsx("div", { className: "inline-block", children: _jsx(Card, { value: card.value, suit: card.suit, clickable: currentPlayer === 'player' && !disabled, selected: selectedCard === card, playable: isCardPlayable(card), onClick: () => handleCardClick(card) }) }, `${card.value}-${card.suit}-${i}`))) })] }));
+    return (_jsxs("div", { className: "text-white d-flex flex-column items-center", children: [_jsx("div", { className: "text-center mb-4", children: _jsxs("div", { className: "flex items-center justify-center gap-4 mb-2", children: [_jsx("div", { className: "bg-white text-black rounded-full w-8 h-8 flex items-center justify-center font-bold", children: opponentScore }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: "w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center", children: _jsx("span", { className: "text-white font-bold", children: opponentName.charAt(0).toUpperCase() }) }), _jsx("span", { className: "text-sm font-bold", children: opponentName })] })] }) }), _jsx("div", { className: "cards-row mb-4", children: opponentCards.map((_, i) => (_jsx("div", { className: "inline-block", children: _jsx(Card, { hidden: true }) }, i))) }), _jsx("div", { className: "tatami-container", children: _jsxs("div", { className: "tatami-background", children: [opponentTableCards.length > 0 && (_jsx("div", { className: "tatami-section opponent-section", children: _jsx("div", { className: "stacked-cards", children: opponentTableCards.map((card, i) => (_jsx("div", { className: "stacked-card", style: {
+                                        zIndex: i + 1,
+                                        transform: `translateX(${i * 15}px) rotate(${(i - 2) * 3}deg)`
+                                    }, children: _jsx(Card, { value: card.value, suit: card.suit, clickable: false }) }, `opp-${i}`))) }) })), _jsx("div", { className: "tatami-message", children: _jsxs("div", { className: "text-center text-white", children: [_jsx("div", { className: "text-lg font-semibold mb-2", children: message }), currentPlayer === 'player' && playableCards.length > 0 && (_jsxs("div", { className: "text-sm text-green-400", children: [playableCards.length, " carte", playableCards.length > 1 ? 's' : '', " jouable", playableCards.length > 1 ? 's' : ''] })), currentPlayer === 'player' && playableCards.length === 0 && !disabled && (_jsx("div", { className: "text-sm text-red-400", children: "Aucune carte jouable - Joue ta plus petite carte" }))] }) }), playerTableCards.length > 0 && (_jsx("div", { className: "tatami-section player-section", children: _jsx("div", { className: "stacked-cards", children: playerTableCards.map((card, i) => (_jsx("div", { className: "stacked-card", style: {
+                                        zIndex: i + 1,
+                                        transform: `translateX(${i * 15}px) rotate(${(i - 2) * 2}deg)`
+                                    }, children: _jsx(Card, { value: card.value, suit: card.suit, clickable: false }) }, `player-${i}`))) }) })), tableCards.length > 0 && (_jsxs("div", { className: "tatami-history", children: [_jsx("div", { className: "text-xs text-gray-400 text-center mb-2", children: "Derni\u00E8re carte jou\u00E9e:" }), _jsx("div", { className: "flex justify-center", children: _jsx(Card, { value: tableCards[tableCards.length - 1].value, suit: tableCards[tableCards.length - 1].suit, clickable: false }) })] }))] }) }), _jsx("div", { className: "text-center mt-4", children: _jsxs("div", { className: "flex items-center justify-center gap-4 mb-2", children: [_jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: "w-10 h-10 bg-red-600 rounded-full flex items-center justify-center", children: _jsx("span", { className: "text-white font-bold", children: playerName.charAt(0).toUpperCase() }) }), _jsxs("div", { className: "text-left", children: [_jsx("div", { className: "text-sm font-bold", children: playerName }), _jsxs("div", { className: "text-xs text-gray-400", children: ["Somme: ", playerCards.reduce((sum, card) => sum + card.value, 0)] })] })] }), _jsx("div", { className: "bg-white text-black rounded-full w-8 h-8 flex items-center justify-center font-bold", children: playerScore })] }) }), _jsx("div", { className: "cards-row mt-4", children: playerCards.map((card, i) => (_jsx("div", { className: "inline-block", children: _jsx(Card, { value: card.value, suit: card.suit, clickable: currentPlayer === 'player' && !disabled, playable: isCardPlayable(card), onClick: () => handleCardClick(card) }) }, `${card.value}-${card.suit}-${i}`))) })] }));
 };
 export default GameBoard;

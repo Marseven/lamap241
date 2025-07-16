@@ -29,6 +29,8 @@ import HistoryPage from './pages/HistoryPage';
 import AchievementsPage from './pages/AchievementsPage';
 import SettingsPage from './pages/SettingsPage';
 import SupportPage from './pages/SupportPage';
+import StatsPage from './pages/StatsPage';
+import BotManagementPage from './pages/BotManagementPage';
 
 // Pages légales
 import TermsPage from './pages/TermsPage';
@@ -208,6 +210,22 @@ function AppContent() {
           <ProtectedRoute>
             <ProtectedLayout>
               <SupportPage />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/stats" element={
+          <ProtectedRoute>
+            <ProtectedLayout>
+              <StatsPage />
+            </ProtectedLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/bots" element={
+          <ProtectedRoute>
+            <ProtectedLayout>
+              <BotManagementPage />
             </ProtectedLayout>
           </ProtectedRoute>
         } />

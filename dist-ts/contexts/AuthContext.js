@@ -1,5 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../services/api';
 const AuthContext = createContext();
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -11,90 +12,49 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    // Charger l'utilisateur depuis localStorage au démarrage
+    // Charger l'utilisateur au démarrage si token existe
     useEffect(() => {
-        const savedUser = localStorage.getItem('lamap_user');
-        if (savedUser) {
-            try {
-                setUser(JSON.parse(savedUser));
+        const initializeAuth = async () => {
+            const token = localStorage.getItem('lamap_token');
+            if (token) {
+                try {
+                    const userData = await api.getProfile();
+                    setUser(userData);
+                }
+                catch (error) {
+                    console.error('Erreur lors du chargement du profil:', error);
+                    // Token invalide, le supprimer
+                    localStorage.removeItem('lamap_token');
+                    api.token = null;
+                }
             }
-            catch (error) {
-                console.error('Erreur lors du chargement de l\'utilisateur:', error);
-                localStorage.removeItem('lamap_user');
-            }
-        }
-        setLoading(false);
+            setLoading(false);
+        };
+        initializeAuth();
     }, []);
-    // Sauvegarder l'utilisateur dans localStorage à chaque changement
-    useEffect(() => {
-        if (user) {
-            localStorage.setItem('lamap_user', JSON.stringify(user));
-        }
-        else {
-            localStorage.removeItem('lamap_user');
-        }
-    }, [user]);
-    // Fonction de connexion (sera remplacée par l'API Laravel)
+    // Fonction de connexion
     const login = async (credentials) => {
         try {
             setLoading(true);
-            // Simulation d'appel API - À remplacer par l'appel réel
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            // Créer l'utilisateur fictif
-            const userData = {
-                id: Math.random().toString(36).substring(2, 9),
-                pseudo: credentials.pseudo,
-                email: credentials.email || '',
-                phone: credentials.phone || '',
-                balance: 10000, // Bonus de bienvenue
-                avatar: null,
-                createdAt: new Date().toISOString(),
-                stats: {
-                    gamesPlayed: 0,
-                    gamesWon: 0,
-                    totalEarnings: 0
-                }
-            };
-            setUser(userData);
-            return { success: true, user: userData };
+            const result = await api.login(credentials);
+            setUser(result.user);
+            return { success: true, user: result.user };
         }
         catch (error) {
             console.error('Erreur de connexion:', error);
-            return { success: false, error: 'Erreur de connexion' };
+            return { success: false, error: error.message };
         }
         finally {
             setLoading(false);
         }
     };
-    // Fonction d'inscription (sera remplacée par l'API Laravel)
+    // Fonction d'inscription
     const register = async (userData) => {
         try {
             setLoading(true);
-            // Validation basique
-            if (!userData.pseudo || userData.pseudo.length < 3) {
-                throw new Error('Le pseudo doit contenir au moins 3 caractères');
-            }
-            if (!userData.password || userData.password.length < 6) {
-                throw new Error('Le mot de passe doit contenir au moins 6 caractères');
-            }
-            // Simulation d'appel API
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const newUser = {
-                id: Math.random().toString(36).substring(2, 9),
-                pseudo: userData.pseudo,
-                email: userData.email || '',
-                phone: userData.phone || '',
-                balance: 10000, // Bonus de bienvenue
-                avatar: null,
-                createdAt: new Date().toISOString(),
-                stats: {
-                    gamesPlayed: 0,
-                    gamesWon: 0,
-                    totalEarnings: 0
-                }
-            };
-            setUser(newUser);
-            return { success: true, user: newUser };
+            const result = await api.register(userData);
+            setUser(result.user);
+            return { success: true, user: result.user };
         }
         catch (error) {
             console.error('Erreur d\'inscription:', error);
@@ -105,9 +65,16 @@ export const AuthProvider = ({ children }) => {
         }
     };
     // Fonction de déconnexion
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('lamap_user');
+    const logout = async () => {
+        try {
+            await api.logout();
+        }
+        catch (error) {
+            console.error('Erreur lors de la déconnexion:', error);
+        }
+        finally {
+            setUser(null);
+        }
     };
     // Mise à jour des données utilisateur
     const updateUser = (updates) => {
@@ -120,6 +87,18 @@ export const AuthProvider = ({ children }) => {
             balance: Math.max(0, prev.balance + amount)
         } : null);
     };
+    // Rafraîchir les données utilisateur
+    const refreshUser = async () => {
+        if (!user)
+            return;
+        try {
+            const userData = await api.getProfile();
+            setUser(userData);
+        }
+        catch (error) {
+            console.error('Erreur lors du rafraîchissement:', error);
+        }
+    };
     const value = {
         user,
         loading,
@@ -128,6 +107,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateUser,
         updateBalance,
+        refreshUser,
         isAuthenticated: !!user
     };
     return (_jsx(AuthContext.Provider, { value: value, children: children }));

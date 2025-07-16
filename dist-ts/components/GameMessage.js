@@ -20,5 +20,5 @@ export default function GameMessage({ message, type = 'normal', currentPlayer })
             return '';
         return currentPlayer === 'player' ? '👤 Ton tour' : '🤖 Tour de l\'IA';
     };
-    return (_jsxs("div", { className: `${getMessageClass()} fade-in`, children: [_jsx("div", { className: "font-semibold mb-2", children: message }), currentPlayer && (_jsx("div", { className: "text-sm opacity-80", children: getTurnIndicator() }))] }));
+    return (_jsxs("div", { className: `${getMessageClass()} fade-in`, children: [_jsx("div", { className: "font-semibold", children: message }), currentPlayer && (_jsx("div", { className: "text-sm opacity-80", children: getTurnIndicator() }))] }));
 }

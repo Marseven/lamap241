@@ -222,6 +222,28 @@ export default function AppHeader({
                       </div>
                       
                     </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/stats')}
+                      className="dropdown-item"
+                    >
+                      <div className="item-content">
+                        <span className="item-label">Statistiques</span>
+                        <span className="item-desc">Dashboard et classements</span>
+                      </div>
+                      
+                    </button>
+
+                    <button 
+                      onClick={() => handleMenuItemClick('/bots')}
+                      className="dropdown-item"
+                    >
+                      <div className="item-content">
+                        <span className="item-label">Bots IA</span>
+                        <span className="item-desc">Gérer vos adversaires IA</span>
+                      </div>
+                      
+                    </button>
                   </div>
 
                   <div className="dropdown-divider"></div>

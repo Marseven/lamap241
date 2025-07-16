@@ -1,100 +1,345 @@
-import { useState, useEffect } from "react";
-// Utilitaire pour créer un deck
-const createDeck = () => {
-    const suits = ["♠", "♥", "♣", "♦"];
-    const deck = [];
-    for (let v = 2; v <= 10; v++) {
-        suits.forEach((suit) => deck.push({ value: v, suit }));
-    }
-    return deck.sort(() => 0.5 - Math.random());
-};
-export const useGameLogic = (gameMode = "ai") => {
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
+export const useGameLogic = (gameId, gameMode = "multiplayer") => {
+    const { user } = useAuth();
     const [gameState, setGameState] = useState({
+        gameId: gameId,
+        roundNumber: 1,
+        status: "waiting", // waiting, in_progress, completed, abandoned
         playerCards: [],
         opponentCards: [],
-        tableCard: null,
-        opponentTableCard: null,
-        currentPlayer: "player",
-        score: { player: 0, opponent: 0 },
-        gamePhase: "playing", // 'playing', 'roundEnd', 'gameEnd'
-        selectedCard: null,
-        message: "Nouvelle partie - À toi de jouer !",
+        tableCards: [],
+        currentPlayerId: null,
+        isMyTurn: false,
+        scores: {},
+        message: "Chargement de la partie...",
+        gamePhase: "loading", // loading, playing, roundEnd, gameEnd
+        roomInfo: null,
+        lastMove: null,
     });
-    // Initialiser une nouvelle manche
-    const startNewRound = () => {
-        const deck = createDeck();
-        setGameState((prev) => ({
-            ...prev,
-            playerCards: deck.slice(0, 5),
-            opponentCards: deck.slice(5, 10),
-            tableCard: null,
-            opponentTableCard: null,
-            currentPlayer: "player",
-            selectedCard: null,
-            message: "Nouvelle manche - À toi de jouer !",
-            gamePhase: "playing",
-        }));
-    };
-    // Sélectionner une carte
-    const selectCard = (card) => {
-        setGameState((prev) => ({
-            ...prev,
-            selectedCard: prev.selectedCard === card ? null : card,
-        }));
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    // Charger l'état initial du jeu
+    const loadGameState = useCallback(async () => {
+        if (!gameId || !user)
+            return;
+        try {
+            setLoading(true);
+            setError(null);
+            // D'abord vérifier si la salle existe et son statut
+            const roomInfo = await api.getRoom(gameId);
+            // Si la salle est en attente, ne pas essayer de récupérer l'état du jeu
+            if (roomInfo.status === 'waiting') {
+                setGameState((prev) => ({
+                    ...prev,
+                    status: "waiting",
+                    gamePhase: "waiting",
+                    message: "En attente d'autres joueurs...",
+                    roomInfo: roomInfo,
+                }));
+                setError(null);
+                return;
+            }
+            // Si la salle est prête, essayer de récupérer l'état du jeu
+            const state = await api.getGameState(gameId);
+            setGameState((prevState) => ({
+                ...prevState,
+                ...state,
+                gamePhase: state.status === "completed" ? "gameEnd" : "playing",
+                message: state.status === "completed"
+                    ? `Partie terminée !`
+                    : state.isMyTurn
+                        ? "À toi de jouer !"
+                        : "Tour de l'adversaire",
+            }));
+        }
+        catch (error) {
+            console.error("Erreur lors du chargement du jeu:", error);
+            // Vérifier si c'est une erreur de "pas de jeu en cours"
+            if (error.message === "Aucun jeu en cours dans cette salle") {
+                // Essayer de récupérer les infos de la salle
+                try {
+                    const roomInfo = await api.getRoom(gameId);
+                    if (roomInfo.status === 'waiting') {
+                        setGameState((prev) => ({
+                            ...prev,
+                            status: "waiting",
+                            gamePhase: "waiting",
+                            message: "En attente d'autres joueurs...",
+                            roomInfo: roomInfo,
+                        }));
+                        setError(null);
+                    }
+                    else {
+                        setError(error.message);
+                        setGameState((prev) => ({
+                            ...prev,
+                            message: "Erreur de chargement",
+                            gamePhase: "error",
+                        }));
+                    }
+                }
+                catch (roomError) {
+                    setError(error.message);
+                    setGameState((prev) => ({
+                        ...prev,
+                        message: "Erreur de chargement",
+                        gamePhase: "error",
+                    }));
+                }
+            }
+            else {
+                setError(error.message);
+                setGameState((prev) => ({
+                    ...prev,
+                    message: "Erreur de chargement",
+                    gamePhase: "error",
+                }));
+            }
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [gameId, user]);
+    // Charger l'état initial
+    useEffect(() => {
+        loadGameState();
+    }, [loadGameState]);
+    // Polling pour les mises à jour temps réel
+    useEffect(() => {
+        if (!gameId || gameState.status === "completed" || gameState.gamePhase === "waiting")
+            return;
+        const pollInterval = setInterval(async () => {
+            try {
+                const state = await api.getGameState(gameId);
+                setGameState((prevState) => {
+                    // Ne mettre à jour que si quelque chose a changé
+                    if (JSON.stringify(prevState.tableCards) !==
+                        JSON.stringify(state.tableCards) ||
+                        prevState.currentPlayerId !== state.currentPlayerId ||
+                        prevState.status !== state.status) {
+                        return {
+                            ...prevState,
+                            ...state,
+                            gamePhase: state.status === "completed" ? "gameEnd" : "playing",
+                            message: getGameMessage(state, user.id),
+                        };
+                    }
+                    return prevState;
+                });
+            }
+            catch (error) {
+                console.error("Erreur polling:", error);
+                // Si c'est une erreur de "pas de jeu en cours", vérifier le statut de la salle
+                if (error.message === "Aucun jeu en cours dans cette salle") {
+                    try {
+                        const roomInfo = await api.getRoom(gameId);
+                        if (roomInfo.status === 'waiting') {
+                            setGameState((prev) => ({
+                                ...prev,
+                                status: "waiting",
+                                gamePhase: "waiting",
+                                message: "En attente d'autres joueurs...",
+                                roomInfo: roomInfo,
+                            }));
+                        }
+                    }
+                    catch (roomError) {
+                        // Ignorer l'erreur de polling
+                    }
+                }
+            }
+        }, 2000); // Poll toutes les 2 secondes
+        return () => clearInterval(pollInterval);
+    }, [gameId, gameState.status, gameState.gamePhase, user.id]);
+    // Polling spécifique pour la salle d'attente
+    useEffect(() => {
+        if (!gameId || gameState.gamePhase !== "waiting")
+            return;
+        const waitingPollInterval = setInterval(async () => {
+            try {
+                // Essayer de récupérer l'état du jeu pour voir si la partie a commencé
+                const state = await api.getGameState(gameId);
+                // Si on arrive ici, c'est que la partie a commencé
+                setGameState((prevState) => ({
+                    ...prevState,
+                    ...state,
+                    gamePhase: "playing",
+                    message: getGameMessage(state, user.id),
+                }));
+            }
+            catch (error) {
+                // Si l'erreur persiste, vérifier le statut de la salle
+                if (error.message === "Aucun jeu en cours dans cette salle") {
+                    try {
+                        const roomInfo = await api.getRoom(gameId);
+                        setGameState((prev) => ({
+                            ...prev,
+                            roomInfo: roomInfo,
+                            message: roomInfo.status === 'waiting' ?
+                                "En attente d'autres joueurs..." :
+                                "Préparation de la partie...",
+                        }));
+                    }
+                    catch (roomError) {
+                        console.error("Erreur lors de la vérification de la salle:", roomError);
+                    }
+                }
+            }
+        }, 3000); // Poll toutes les 3 secondes pour l'attente
+        return () => clearInterval(waitingPollInterval);
+    }, [gameId, gameState.gamePhase, user.id]);
+    // Générer le message de jeu approprié
+    const getGameMessage = (state, userId) => {
+        if (state.status === "completed") {
+            const winner = Object.entries(state.scores).find(([_, score]) => score.rounds_won >= state.room.rounds_to_win);
+            if (winner) {
+                return winner[0] === userId
+                    ? "🎉 Tu as gagné la partie !"
+                    : "😔 Tu as perdu la partie";
+            }
+            return "Partie terminée";
+        }
+        if (state.isMyTurn) {
+            if (state.tableCards.length === 0) {
+                return "À toi de commencer !";
+            }
+            else {
+                const lastCard = state.tableCards[state.tableCards.length - 1];
+                return `Réponds à ${lastCard.value}${lastCard.suit} ou passe ton tour`;
+            }
+        }
+        else {
+            return "Tour de l'adversaire...";
+        }
     };
     // Jouer une carte
-    const playCard = (card) => {
-        if (gameState.currentPlayer !== "player" ||
-            gameState.gamePhase !== "playing") {
-            return false;
+    const playCard = async (card) => {
+        if (!gameState.isMyTurn || gameState.status !== "in_progress") {
+            return { success: false, error: "Ce n'est pas votre tour" };
         }
-        // Logique de jeu ici (sera remplacée par les appels API)
-        const newPlayerCards = gameState.playerCards.filter((c) => c !== card);
-        setGameState((prev) => ({
-            ...prev,
-            playerCards: newPlayerCards,
-            tableCard: card,
-            selectedCard: null,
-            currentPlayer: "opponent",
-            message: `Tu joues ${card.value}${card.suit}`,
-        }));
-        return true;
-    };
-    // IA joue (simulation - sera remplacé par API)
-    const aiPlay = () => {
-        if (gameState.currentPlayer !== "opponent" ||
-            gameState.opponentCards.length === 0) {
-            return;
-        }
-        setTimeout(() => {
-            const randomCard = gameState.opponentCards[Math.floor(Math.random() * gameState.opponentCards.length)];
-            const newOpponentCards = gameState.opponentCards.filter((c) => c !== randomCard);
+        try {
             setGameState((prev) => ({
                 ...prev,
-                opponentCards: newOpponentCards,
-                opponentTableCard: randomCard,
-                currentPlayer: "player",
-                message: `IA joue ${randomCard.value}${randomCard.suit}`,
+                message: "Envoi du coup...",
             }));
-        }, 1500);
-    };
-    // Effet pour l'IA
-    useEffect(() => {
-        if (gameState.currentPlayer === "opponent" &&
-            gameState.gamePhase === "playing") {
-            aiPlay();
+            const response = await api.playCard(gameId, card);
+            if (response.message) {
+                // Recharger l'état complet du jeu
+                await loadGameState();
+                return { success: true };
+            }
+            else {
+                return { success: false, error: response.message };
+            }
         }
-    }, [gameState.currentPlayer, gameState.gamePhase]);
-    // Initialiser le jeu
-    useEffect(() => {
-        startNewRound();
-    }, []);
+        catch (error) {
+            console.error("Erreur jouer carte:", error);
+            setGameState((prev) => ({
+                ...prev,
+                message: "Erreur lors du coup",
+            }));
+            return { success: false, error: error.message };
+        }
+    };
+    // Passer son tour
+    const passTurn = async () => {
+        if (!gameState.isMyTurn || gameState.status !== "in_progress") {
+            return { success: false, error: "Ce n'est pas votre tour" };
+        }
+        try {
+            setGameState((prev) => ({
+                ...prev,
+                message: "Passage du tour...",
+            }));
+            const response = await api.request(`/games/${gameId}/pass`, {
+                method: "POST",
+            });
+            if (response.message) {
+                await loadGameState();
+                return { success: true };
+            }
+            else {
+                return { success: false, error: response.message };
+            }
+        }
+        catch (error) {
+            console.error("Erreur passer tour:", error);
+            return { success: false, error: error.message };
+        }
+    };
+    // Abandonner la partie
+    const forfeitGame = async () => {
+        try {
+            setGameState((prev) => ({
+                ...prev,
+                message: "Abandon en cours...",
+            }));
+            await api.forfeitGame(gameId);
+            setGameState((prev) => ({
+                ...prev,
+                status: "abandoned",
+                gamePhase: "gameEnd",
+                message: "Tu as abandonné la partie",
+            }));
+            return { success: true };
+        }
+        catch (error) {
+            console.error("Erreur abandon:", error);
+            return { success: false, error: error.message };
+        }
+    };
+    // Vérifier si une carte est jouable
+    const isCardPlayable = (card) => {
+        if (!gameState.isMyTurn || gameState.status !== "in_progress") {
+            return false;
+        }
+        // Si aucune carte sur la table, toutes les cartes sont jouables
+        if (gameState.tableCards.length === 0) {
+            return true;
+        }
+        const lastCard = gameState.tableCards[gameState.tableCards.length - 1];
+        // Doit jouer la même couleur avec une valeur supérieure
+        return card.suit === lastCard.suit && card.value > lastCard.value;
+    };
+    // Obtenir les cartes jouables
+    const getPlayableCards = () => {
+        return gameState.playerCards.filter(isCardPlayable);
+    };
+    // Redémarrer une nouvelle manche (pour les parties contre l'IA)
+    const startNewRound = async () => {
+        if (gameMode === "ai") {
+            // Pour l'IA, réinitialiser localement
+            setGameState((prev) => ({
+                ...prev,
+                playerCards: [],
+                opponentCards: [],
+                tableCards: [],
+                currentPlayerId: user.id,
+                isMyTurn: true,
+                roundNumber: prev.roundNumber + 1,
+                gamePhase: "playing",
+                message: "Nouvelle manche - À toi de jouer !",
+            }));
+        }
+        else {
+            // Pour le multijoueur, recharger depuis l'API
+            await loadGameState();
+        }
+    };
     return {
         gameState,
+        loading,
+        error,
         actions: {
-            startNewRound,
-            selectCard,
             playCard,
+            passTurn,
+            forfeitGame,
+            startNewRound,
+            loadGameState,
+            isCardPlayable,
+            getPlayableCards,
         },
     };
 };
