@@ -20,16 +20,25 @@ const useGameStore = create((set, get) => ({
             let stats;
             try {
                 stats = await apiService.getDetailedStats();
+                console.log('Enhanced stats loaded successfully:', stats);
             }
             catch (error) {
-                console.warn('Enhanced stats not available, falling back to basic stats');
-                stats = await apiService.getMyStats();
-                stats = { stats: { basic: stats } };
+                console.warn('Enhanced stats not available, falling back to basic stats. Error:', error.message);
+                try {
+                    const basicStats = await apiService.getMyStats();
+                    stats = { stats: { basic: basicStats } };
+                    console.log('Fallback to basic stats successful:', stats);
+                }
+                catch (fallbackError) {
+                    console.error('Both enhanced and basic stats failed:', fallbackError.message);
+                    throw new Error('Impossible de charger les statistiques. Veuillez réessayer plus tard.');
+                }
             }
             set({ detailedStats: stats.stats, statsLoading: false });
             return stats;
         }
         catch (error) {
+            console.error('fetchDetailedStats error:', error);
             set({ statsError: error.message, statsLoading: false });
             throw error;
         }
@@ -41,11 +50,19 @@ const useGameStore = create((set, get) => ({
             let leaderboards;
             try {
                 leaderboards = await apiService.getAllLeaderboards();
+                console.log('Enhanced leaderboards loaded successfully:', leaderboards);
             }
             catch (error) {
-                console.warn('Enhanced leaderboards not available, falling back to basic leaderboard');
-                const basicLeaderboard = await apiService.getLeaderboard();
-                leaderboards = { leaderboards: { winnings: basicLeaderboard.leaderboard || [] } };
+                console.warn('Enhanced leaderboards not available, falling back to basic leaderboard. Error:', error.message);
+                try {
+                    const basicLeaderboard = await apiService.getLeaderboard();
+                    leaderboards = { leaderboards: { winnings: basicLeaderboard.leaderboard || [] } };
+                    console.log('Fallback to basic leaderboard successful:', leaderboards);
+                }
+                catch (fallbackError) {
+                    console.error('Both enhanced and basic leaderboards failed:', fallbackError.message);
+                    throw new Error('Impossible de charger les classements. Veuillez réessayer plus tard.');
+                }
             }
             const leaderboardData = leaderboards.leaderboards || {};
             // Ensure each leaderboard type is an array
@@ -58,6 +75,7 @@ const useGameStore = create((set, get) => ({
             return leaderboards;
         }
         catch (error) {
+            console.error('fetchAllLeaderboards error:', error);
             set({ statsError: error.message, statsLoading: false });
             throw error;
         }
@@ -69,16 +87,25 @@ const useGameStore = create((set, get) => ({
             let achievements;
             try {
                 achievements = await apiService.getMyAchievements();
+                console.log('Enhanced achievements loaded successfully:', achievements);
             }
             catch (error) {
-                console.warn('Enhanced achievements not available, falling back to basic achievements');
-                achievements = await apiService.getAchievements();
-                achievements = { achievements: achievements.achievements || [] };
+                console.warn('Enhanced achievements not available, falling back to basic achievements. Error:', error.message);
+                try {
+                    const basicAchievements = await apiService.getAchievements();
+                    achievements = { achievements: basicAchievements.achievements || [] };
+                    console.log('Fallback to basic achievements successful:', achievements);
+                }
+                catch (fallbackError) {
+                    console.error('Both enhanced and basic achievements failed:', fallbackError.message);
+                    throw new Error('Impossible de charger les achievements. Veuillez réessayer plus tard.');
+                }
             }
             set({ myAchievements: Array.isArray(achievements.achievements) ? achievements.achievements : [], statsLoading: false });
             return achievements;
         }
         catch (error) {
+            console.error('fetchMyAchievements error:', error);
             set({ statsError: error.message, statsLoading: false });
             throw error;
         }
@@ -89,9 +116,10 @@ const useGameStore = create((set, get) => ({
             let globalStats;
             try {
                 globalStats = await apiService.getGlobalStats();
+                console.log('Enhanced global stats loaded successfully:', globalStats);
             }
             catch (error) {
-                console.warn('Enhanced global stats not available, using mock data');
+                console.warn('Enhanced global stats not available, using mock data. Error:', error.message);
                 globalStats = {
                     stats: {
                         total_players: 150,
@@ -100,12 +128,13 @@ const useGameStore = create((set, get) => ({
                         total_achievements: 75
                     }
                 };
+                console.log('Using mock global stats:', globalStats);
             }
             set({ globalStats: globalStats.stats });
             return globalStats;
         }
         catch (error) {
-            console.error('Erreur lors du chargement des stats globales:', error);
+            console.error('fetchGlobalStats error:', error);
             throw error;
         }
     },

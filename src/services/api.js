@@ -33,17 +33,73 @@ class ApiService {
         },
       });
 
-      const data = await response.json();
+      // Vérifier si la réponse est du JSON valide
+      const contentType = response.headers.get("content-type");
+      let data;
+      
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          console.error("JSON parsing error:", parseError);
+          throw new Error("Erreur lors de la lecture de la réponse du serveur");
+        }
+      } else {
+        // Si ce n'est pas du JSON, traiter comme erreur
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error("Le serveur a renvoyé une réponse invalide");
+      }
 
       if (!response.ok) {
-        throw new Error(
-          data.message || `HTTP error! status: ${response.status}`
-        );
+        // Améliorer la gestion des erreurs avec des messages plus spécifiques
+        let errorMessage = "Erreur inconnue";
+        
+        if (data && data.message) {
+          errorMessage = data.message;
+        } else if (data && data.error) {
+          errorMessage = data.error;
+        } else {
+          switch (response.status) {
+            case 400:
+              errorMessage = "Requête invalide";
+              break;
+            case 401:
+              errorMessage = "Non autorisé - Veuillez vous reconnecter";
+              break;
+            case 403:
+              errorMessage = "Accès interdit";
+              break;
+            case 404:
+              errorMessage = "Ressource non trouvée";
+              break;
+            case 500:
+              errorMessage = "Erreur interne du serveur";
+              break;
+            case 503:
+              errorMessage = "Service temporairement indisponible";
+              break;
+            default:
+              errorMessage = `Erreur HTTP ${response.status}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
       console.error("API Error:", error);
+      
+      // Améliorer les messages d'erreur pour les problèmes de réseau
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error("Impossible de se connecter au serveur. Vérifiez votre connexion internet.");
+      }
+      
+      if (error.name === 'AbortError') {
+        throw new Error("La requête a été annulée (timeout)");
+      }
+      
       throw error;
     }
   }

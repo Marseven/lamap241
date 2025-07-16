@@ -3,54 +3,114 @@ import BotManager from '../components/BotManager';
 
 const BotManagementPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Bots IA</h1>
-          <p className="mt-2 text-gray-600">
-            Créez et gérez vos adversaires intelligents
-          </p>
-        </div>
+    <div className="mobile-container neon-theme">
+      <div className="lamap-section">
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--lamap-white)', textAlign: 'center', marginBottom: '1rem' }}>
+          🤖 Gestion des Bots IA
+        </h1>
+        <p style={{ color: '#888', textAlign: 'center', marginBottom: '2rem' }}>
+          Créez et gérez vos adversaires intelligents
+        </p>
+      </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <h3 className="text-lg font-medium text-blue-900 mb-2">
+      <div className="lamap-section">
+        <div style={{
+          background: '#111',
+          border: '2px solid var(--lamap-red)',
+          borderRadius: '12px',
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          boxShadow: '0 0 15px rgba(198, 40, 40, 0.3)'
+        }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--lamap-red)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>🧠</span>
             À propos des Bots IA
           </h3>
-          <div className="text-blue-800 space-y-2">
-            <p>
+          <div style={{ color: 'var(--lamap-white)', lineHeight: '1.6' }}>
+            <p style={{ marginBottom: '1rem' }}>
               Les bots IA sont des adversaires intelligents qui peuvent rejoindre vos parties.
               Ils utilisent des algorithmes avancés pour jouer selon les règles de La Map 241.
             </p>
-            <ul className="list-disc list-inside space-y-1 mt-3">
-              <li><strong>Facile:</strong> Prend des décisions simples, idéal pour débuter</li>
-              <li><strong>Moyen:</strong> Analyse les cartes jouées et adapte sa stratégie</li>
-              <li><strong>Difficile:</strong> Utilise des stratégies avancées et mémorise les patterns</li>
-            </ul>
+            <div style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ 
+                  background: '#4ade80', 
+                  color: '#000', 
+                  padding: '0.2rem 0.5rem', 
+                  borderRadius: '8px', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  FACILE
+                </span>
+                <span style={{ fontSize: '0.9rem' }}>Prend des décisions simples, idéal pour débuter</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ 
+                  background: '#f59e0b', 
+                  color: '#000', 
+                  padding: '0.2rem 0.5rem', 
+                  borderRadius: '8px', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  MOYEN
+                </span>
+                <span style={{ fontSize: '0.9rem' }}>Analyse les cartes jouées et adapte sa stratégie</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ 
+                  background: '#ef4444', 
+                  color: '#fff', 
+                  padding: '0.2rem 0.5rem', 
+                  borderRadius: '8px', 
+                  fontSize: '0.7rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  DIFFICILE
+                </span>
+                <span style={{ fontSize: '0.9rem' }}>Utilise des stratégies avancées et mémorise les patterns</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <BotManager />
+      <BotManager />
 
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-yellow-900 mb-3">
+      <div className="lamap-section">
+        <div style={{
+          background: '#111',
+          border: '1px solid #fbbf24',
+          borderRadius: '12px',
+          padding: '1.5rem',
+          marginTop: '2rem',
+          boxShadow: '0 0 10px rgba(251, 191, 36, 0.2)'
+        }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fbbf24', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>💡</span>
             Conseils d'utilisation
           </h3>
-          <div className="text-yellow-800 space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ color: 'var(--lamap-white)' }}>
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
               <div>
-                <h4 className="font-medium mb-2">Pour l'entraînement:</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Commencez avec des bots "Facile" pour apprendre</li>
-                  <li>Progressez vers "Moyen" pour améliorer votre stratégie</li>
-                  <li>Défiez les bots "Difficile" pour vous perfectionner</li>
+                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fbbf24', marginBottom: '0.5rem' }}>
+                  🎯 Pour l'entraînement:
+                </h4>
+                <ul style={{ fontSize: '0.9rem', lineHeight: '1.5', paddingLeft: '1rem' }}>
+                  <li style={{ marginBottom: '0.25rem' }}>• Commencez avec des bots "Facile" pour apprendre</li>
+                  <li style={{ marginBottom: '0.25rem' }}>• Progressez vers "Moyen" pour améliorer votre stratégie</li>
+                  <li style={{ marginBottom: '0.25rem' }}>• Défiez les bots "Difficile" pour vous perfectionner</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Pour les parties:</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Ajoutez des bots pour compléter les parties</li>
-                  <li>Mélangez différents niveaux pour varier l'expérience</li>
-                  <li>Suivez les statistiques pour évaluer votre progression</li>
+                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fbbf24', marginBottom: '0.5rem' }}>
+                  🎮 Pour les parties:
+                </h4>
+                <ul style={{ fontSize: '0.9rem', lineHeight: '1.5', paddingLeft: '1rem' }}>
+                  <li style={{ marginBottom: '0.25rem' }}>• Ajoutez des bots pour compléter les parties</li>
+                  <li style={{ marginBottom: '0.25rem' }}>• Mélangez différents niveaux pour varier l'expérience</li>
+                  <li style={{ marginBottom: '0.25rem' }}>• Suivez les statistiques pour évaluer votre progression</li>
                 </ul>
               </div>
             </div>
