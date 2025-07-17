@@ -60,18 +60,6 @@ const BotManager = ({ roomCode, onBotAdded }) => {
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case 'easy':
-        return 'text-green-600 bg-green-100';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'hard':
-        return 'text-red-600 bg-red-100';
-      default:
-        return 'text-gray-600 bg-gray-100';
-    }
-  };
 
   const getDifficultyLabel = (difficulty) => {
     switch (difficulty) {
@@ -441,45 +429,299 @@ const BotManager = ({ roomCode, onBotAdded }) => {
       )}
 
       {/* Liste des bots */}
-      <div className="space-y-4">
+      <div style={{ marginTop: '2rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: '1.5rem' 
+        }}>
+          <h3 style={{ 
+            fontSize: '1.1rem', 
+            fontWeight: 'bold', 
+            color: 'var(--lamap-white)',
+            margin: 0 
+          }}>
+            🤖 Mes Bots IA ({availableBots.length})
+          </h3>
+          {availableBots.length > 0 && (
+            <div style={{ 
+              fontSize: '0.8rem', 
+              color: '#888',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>⚡</span>
+              <span>Prêts au combat</span>
+            </div>
+          )}
+        </div>
+
         {availableBots.length === 0 ? (
-          <div className="text-center py-8">
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun bot disponible</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Créez votre premier bot IA pour commencer
+          <div style={{
+            textAlign: 'center',
+            padding: '3rem 1rem',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '16px',
+            border: '2px dashed rgba(255, 255, 255, 0.2)'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🤖</div>
+            <h3 style={{ 
+              fontSize: '1.1rem', 
+              fontWeight: 'bold', 
+              color: 'var(--lamap-white)', 
+              marginBottom: '0.5rem' 
+            }}>
+              Aucun bot disponible
+            </h3>
+            <p style={{ 
+              fontSize: '0.9rem', 
+              color: '#888',
+              marginBottom: '1.5rem'
+            }}>
+              Créez votre premier bot IA pour commencer à jouer contre l'intelligence artificielle
             </p>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              style={{
+                background: 'linear-gradient(135deg, var(--lamap-red), #a32222)',
+                color: 'var(--lamap-white)',
+                border: '2px solid var(--lamap-red)',
+                borderRadius: '12px',
+                padding: '12px 24px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(198, 40, 40, 0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <span>✨</span>
+              Créer mon premier bot
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableBots.map((bot) => (
-              <div key={bot.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium">
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+            gap: '1.5rem' 
+          }}>
+            {availableBots.map((bot) => {
+              const difficultyConfig = {
+                easy: { 
+                  color: '#4ade80', 
+                  bgColor: 'rgba(74, 222, 128, 0.15)', 
+                  icon: '🟢',
+                  label: 'Facile'
+                },
+                medium: { 
+                  color: '#fbbf24', 
+                  bgColor: 'rgba(251, 191, 36, 0.15)', 
+                  icon: '🟡',
+                  label: 'Moyen'
+                },
+                hard: { 
+                  color: '#ef4444', 
+                  bgColor: 'rgba(239, 68, 68, 0.15)', 
+                  icon: '🔴',
+                  label: 'Difficile'
+                }
+              };
+
+              const config = difficultyConfig[bot.difficulty] || difficultyConfig.medium;
+
+              return (
+                <div 
+                  key={bot.id} 
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: roomCode ? 'default' : 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08))';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {/* Badge de statut en haut à droite */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: config.bgColor,
+                    border: `1px solid ${config.color}`,
+                    borderRadius: '20px',
+                    padding: '4px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    color: config.color
+                  }}>
+                    <span>{config.icon}</span>
+                    <span>{config.label}</span>
+                  </div>
+
+                  {/* Contenu principal */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
+                    {/* Avatar du bot */}
+                    <div style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${config.color}, ${config.color}aa)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      color: 'white',
+                      border: '3px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: `0 4px 12px ${config.color}30`,
+                      position: 'relative'
+                    }}>
+                      <span style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)' }}>
                         {bot.name ? bot.name.charAt(0).toUpperCase() : 'B'}
                       </span>
+                      {/* Indicateur de statut actif */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -2,
+                        width: '14px',
+                        height: '14px',
+                        background: '#4ade80',
+                        borderRadius: '50%',
+                        border: '2px solid #111',
+                        boxShadow: '0 0 8px rgba(74, 222, 128, 0.6)'
+                      }} />
                     </div>
-                    <div className="ml-3">
-                      <h4 className="text-sm font-medium text-gray-900">{bot.name}</h4>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(bot.difficulty)}`}>
-                        {getDifficultyLabel(bot.difficulty)}
-                      </span>
+
+                    {/* Informations du bot */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ 
+                        fontSize: '1.1rem', 
+                        fontWeight: 'bold', 
+                        color: 'var(--lamap-white)', 
+                        marginBottom: '0.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span>🤖</span>
+                        {bot.name}
+                      </h4>
+                      <div style={{ 
+                        fontSize: '0.8rem', 
+                        color: '#888',
+                        marginBottom: '0.5rem',
+                        lineHeight: '1.3'
+                      }}>
+                        {bot.difficulty === 'easy' && "Stratégie basique • Quelques erreurs • Idéal pour débuter"}
+                        {bot.difficulty === 'medium' && "Stratégie équilibrée • Bon challenge • Pour progresser"}
+                        {bot.difficulty === 'hard' && "Stratégie avancée • Très peu d'erreurs • Expert uniquement"}
+                      </div>
+                      
+                      {/* Statistiques du bot */}
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '1rem', 
+                        fontSize: '0.7rem',
+                        color: '#ccc'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>🎯</span>
+                          <span>Créé récemment</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>⚡</span>
+                          <span>Prêt</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
+                  {/* Actions */}
                   {roomCode && (
-                    <button
-                      onClick={() => handleAddBotToRoom(bot.id)}
-                      disabled={adding === bot.id}
-                      className="px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      {adding === bot.id ? 'Ajout...' : 'Ajouter'}
-                    </button>
+                    <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1rem' }}>
+                      <button
+                        onClick={() => handleAddBotToRoom(bot.id)}
+                        disabled={adding === bot.id}
+                        style={{
+                          width: '100%',
+                          background: adding === bot.id 
+                            ? '#666' 
+                            : 'linear-gradient(135deg, var(--lamap-red), #a32222)',
+                          color: 'var(--lamap-white)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          padding: '12px 16px',
+                          fontSize: '0.9rem',
+                          fontWeight: 'bold',
+                          cursor: adding === bot.id ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.3s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          opacity: adding === bot.id ? 0.7 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                          if (adding !== bot.id) {
+                            e.target.style.transform = 'translateY(-2px)';
+                            e.target.style.boxShadow = '0 6px 20px rgba(198, 40, 40, 0.4)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      >
+                        {adding === bot.id ? (
+                          <>
+                            <LoadingSpinner size="small" color="white" />
+                            <span>Ajout en cours...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🚀</span>
+                            <span>Ajouter à la partie</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
+
+                  {/* Effet de glow subtil */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, transparent, ${config.color}05, transparent)`,
+                    pointerEvents: 'none',
+                    opacity: 0.5
+                  }} />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
