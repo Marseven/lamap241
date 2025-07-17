@@ -198,32 +198,172 @@ const BotManager = ({ roomCode, onBotAdded }) => {
                 fontSize: '0.9rem', 
                 fontWeight: 'bold', 
                 color: 'var(--lamap-white)', 
-                marginBottom: '0.5rem' 
+                marginBottom: '1rem' 
               }}>
-                🎯 Difficulté
+                🎯 Niveau de Difficulté
               </label>
-              <select
-                value={newBotData.difficulty}
-                onChange={(e) => setNewBotData({ ...newBotData, difficulty: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  border: '2px solid #444',
-                  background: '#1a1a1a',
-                  color: 'var(--lamap-white)',
-                  fontSize: '1rem',
-                  outline: 'none',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.3s ease'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--lamap-red)'}
-                onBlur={(e) => e.target.style.borderColor = '#444'}
-              >
-                <option value="easy" style={{ background: '#1a1a1a', color: 'var(--lamap-white)' }}>🟢 Facile</option>
-                <option value="medium" style={{ background: '#1a1a1a', color: 'var(--lamap-white)' }}>🟡 Moyen</option>
-                <option value="hard" style={{ background: '#1a1a1a', color: 'var(--lamap-white)' }}>🔴 Difficile</option>
-              </select>
+              
+              {/* Sélecteur de difficulté amélioré */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                {[
+                  { 
+                    value: 'easy', 
+                    label: 'Facile', 
+                    icon: '🟢',
+                    description: 'Bot débutant, idéal pour apprendre',
+                    color: '#4ade80',
+                    bgColor: 'rgba(74, 222, 128, 0.1)',
+                    borderColor: 'rgba(74, 222, 128, 0.3)'
+                  },
+                  { 
+                    value: 'medium', 
+                    label: 'Moyen', 
+                    icon: '🟡',
+                    description: 'Bot expérimenté, bon défi',
+                    color: '#fbbf24',
+                    bgColor: 'rgba(251, 191, 36, 0.1)',
+                    borderColor: 'rgba(251, 191, 36, 0.3)'
+                  },
+                  { 
+                    value: 'hard', 
+                    label: 'Difficile', 
+                    icon: '🔴',
+                    description: 'Bot expert, très challenging',
+                    color: '#ef4444',
+                    bgColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: 'rgba(239, 68, 68, 0.3)'
+                  }
+                ].map((difficulty) => (
+                  <div
+                    key={difficulty.value}
+                    onClick={() => setNewBotData({ ...newBotData, difficulty: difficulty.value })}
+                    style={{
+                      background: newBotData.difficulty === difficulty.value 
+                        ? `linear-gradient(135deg, ${difficulty.bgColor}, rgba(255, 255, 255, 0.05))`
+                        : 'rgba(255, 255, 255, 0.05)',
+                      border: newBotData.difficulty === difficulty.value 
+                        ? `2px solid ${difficulty.color}`
+                        : '2px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      boxShadow: newBotData.difficulty === difficulty.value 
+                        ? `0 0 20px ${difficulty.color}30`
+                        : 'none',
+                      transform: newBotData.difficulty === difficulty.value ? 'translateY(-2px)' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (newBotData.difficulty !== difficulty.value) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.borderColor = difficulty.borderColor;
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (newBotData.difficulty !== difficulty.value) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.transform = 'none';
+                      }
+                    }}
+                  >
+                    {/* Effet de glow pour l'option sélectionnée */}
+                    {newBotData.difficulty === difficulty.value && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: `linear-gradient(45deg, transparent, ${difficulty.color}10, transparent)`,
+                        animation: 'shimmer 2s infinite',
+                        pointerEvents: 'none'
+                      }} />
+                    )}
+                    
+                    <div style={{ position: 'relative', zIndex: 2 }}>
+                      <div style={{ 
+                        fontSize: '2rem', 
+                        marginBottom: '0.5rem',
+                        filter: newBotData.difficulty === difficulty.value 
+                          ? `drop-shadow(0 0 8px ${difficulty.color})`
+                          : 'none'
+                      }}>
+                        {difficulty.icon}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.9rem', 
+                        fontWeight: 'bold', 
+                        color: newBotData.difficulty === difficulty.value ? difficulty.color : 'var(--lamap-white)',
+                        marginBottom: '0.25rem',
+                        textShadow: newBotData.difficulty === difficulty.value 
+                          ? `0 0 10px ${difficulty.color}`
+                          : 'none'
+                      }}>
+                        {difficulty.label}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.7rem', 
+                        color: newBotData.difficulty === difficulty.value ? '#ccc' : '#888',
+                        lineHeight: '1.2',
+                        height: '2.4rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {difficulty.description}
+                      </div>
+                    </div>
+                    
+                    {/* Indicateur de sélection */}
+                    {newBotData.difficulty === difficulty.value && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        width: '20px',
+                        height: '20px',
+                        background: difficulty.color,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.7rem',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        boxShadow: `0 0 10px ${difficulty.color}`
+                      }}>
+                        ✓
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Informations supplémentaires sur la difficulté sélectionnée */}
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.8rem',
+                background: 'rgba(0, 0, 0, 0.3)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1rem' }}>ℹ️</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--lamap-white)' }}>
+                    Difficulté sélectionnée: {getDifficultyLabel(newBotData.difficulty)}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#ccc', lineHeight: '1.3' }}>
+                  {newBotData.difficulty === 'easy' && "Ce bot commet quelques erreurs et joue de manière prévisible. Parfait pour débuter !"}
+                  {newBotData.difficulty === 'medium' && "Ce bot joue intelligemment avec une stratégie équilibrée. Un bon défi pour progresser."}
+                  {newBotData.difficulty === 'hard' && "Ce bot utilise des stratégies avancées et fait très peu d'erreurs. Pour les joueurs expérimentés !"}
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

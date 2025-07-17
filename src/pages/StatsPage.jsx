@@ -27,34 +27,81 @@ const StatsPage = () => {
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation des onglets */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-red-500 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 mr-2" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <div className="mobile-container neon-theme">
+      {/* En-tête */}
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ 
+          fontSize: '2rem', 
+          fontWeight: 'bold', 
+          color: 'var(--lamap-white)', 
+          textAlign: 'center',
+          marginBottom: '0.5rem'
+        }}>
+          📊 Statistiques
+        </h1>
+        <p style={{ 
+          color: '#888', 
+          textAlign: 'center', 
+          fontSize: '0.9rem' 
+        }}>
+          Suivez vos performances et classements
+        </p>
+      </div>
+
+      {/* Navigation des onglets avec neon theme */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '12px',
+        padding: '8px',
+        marginBottom: '2rem',
+        display: 'flex',
+        gap: '8px'
+      }}>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '12px 8px',
+                background: activeTab === tab.id ? 'var(--lamap-red)' : 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                color: activeTab === tab.id ? 'white' : '#888',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                fontSize: '12px',
+                fontWeight: '500',
+                boxShadow: activeTab === tab.id ? '0 4px 15px rgba(198, 40, 40, 0.3)' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.id) {
+                  e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.target.style.color = 'white';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.id) {
+                  e.target.style.background = 'transparent';
+                  e.target.style.color = '#888';
+                }
+              }}
+            >
+              <Icon style={{ fontSize: '1.1rem' }} />
+              <span>{tab.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Contenu de l'onglet actif */}
-      <div className="py-8">
+      <div>
         {ActiveComponent && <ActiveComponent />}
       </div>
     </div>
